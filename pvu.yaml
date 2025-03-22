@@ -1,0 +1,113 @@
+blueprint:
+  name: "Управление ПВУ Turkov"
+  description: "Автоматизация для переключения режимов обогрева/охлаждения и управления вентиляцией."
+  domain: automation
+  input:
+    # Основные сущности Turkov
+    turkov_climate:
+      name: "Устройство ПВУ Turkov"
+      description: "Выберите климат-устройство Turkov (например, climate.turkov)."
+      selector:
+        entity:
+          domain: climate
+    co2_sensor:
+      name: "Датчик CO₂"
+      selector:
+        entity:
+          domain: sensor
+          device_class: carbon_dioxide
+    outdoor_temp_sensor:
+      name: "Датчик уличной температуры"
+      selector:
+        entity:
+          domain: sensor
+          device_class: temperature
+
+    # Параметры
+    heating_threshold:
+      name: "Включить обогрев ниже (°C)"
+      default: 18
+      selector:
+        number:
+          min: 0
+          max: 30
+          step: 1
+    cooling_threshold:
+      name: "Включить охлаждение выше (°C)"
+      default: 25
+      selector:
+        number:
+          min: 20
+          max: 40
+          step: 1
+    co2_threshold:
+      name: "Порог CO₂ (ppm)"
+      default: 800
+      selector:
+        number:
+          min: 400
+          max: 2000
+
+trigger:
+  - platform: numeric_state
+    entity_id: !input outdoor_temp_sensor
+  - platform: numeric_state
+    entity_id: !input co2_sensor
+
+condition: []
+
+action:
+  - choose:
+      # Режим обогрева
+      - conditions:
+          - condition: template
+            value_template: >
+              {{ states(!input outdoor_temp_sensor) | float < !input heating_threshold }}
+        sequence:
+          - service: climate.set_hvac_mode
+            target:
+              entity_id: !input turkov_climate
+            data:
+              hvac_mode: "heat"
+          - service: fan.set_speed
+            target:
+              entity_id: !input turkov_climate
+            data:
+              speed: "medium"
+
+      # Режим охлаждения
+      - conditions:
+          - condition: template
+            value_template: >
+              {{ states(!input outdoor_temp_sensor) | float > !input cooling_threshold }}
+        sequence:
+          - service: climate.set_hvac_mode
+            target:
+              entity_id: !input turkov_climate
+            data:
+              hvac_mode: "cool"
+          - service: fan.set_speed
+            target:
+              entity_id: !input turkov_climate
+            data:
+              speed: "high"
+
+      # Управление вентиляцией по CO₂
+      - conditions:
+          - condition: template
+            value_template: >
+              {{ states(!input co2_sensor) | int > !input co2_threshold }}
+        sequence:
+          - service: fan.set_speed
+            target:
+              entity_id: !input turkov_climate
+            data:
+              speed: "max"
+          - delay: "00:30:00"
+          - service: fan.set_speed
+            target:
+              entity_id: !input turkov_climate
+            data:
+              speed: "medium"
+
+    default: []
