@@ -1,113 +1,157 @@
 blueprint:
-  name: "Управление ПВУ Turkov"
-  description: "Автоматизация для переключения режимов обогрева/охлаждения и управления вентиляцией."
+  name: "Управление ПВУ Turkov с CO₂, влажностью, давлением и расписанием"
+  description: |
+    Автоматизация для ПВУ Turkov с поддержкой:
+    - Управление по температуре, CO₂, влажности, давлению
+    - Расписание дня/ночи
+    - Настройка приоритетов
   domain: automation
   input:
-    # Основные сущности Turkov
+    # Основные сущности
     turkov_climate:
       name: "Устройство ПВУ Turkov"
-      description: "Выберите климат-устройство Turkov (например, climate.turkov)."
       selector:
         entity:
           domain: climate
-    co2_sensor:
-      name: "Датчик CO₂"
-      selector:
-        entity:
-          domain: sensor
-          device_class: carbon_dioxide
-    outdoor_temp_sensor:
-      name: "Датчик уличной температуры"
+    temp_indoor:
+      name: "Датчик температуры в помещении"
       selector:
         entity:
           domain: sensor
           device_class: temperature
+    humidity_indoor:
+      name: "Датчик влажности (опционально)"
+      selector:
+        entity:
+          domain: sensor
+          device_class: humidity
+      optional: true
+    pressure_sensor:
+      name: "Датчик давления (опционально)"
+      selector:
+        entity:
+          domain: sensor
+          device_class: pressure
+      optional: true
+    co2_sensor:
+      name: "Датчик CO₂ (опционально)"
+      selector:
+        entity:
+          domain: sensor
+          device_class: carbon_dioxide
+      optional: true
 
     # Параметры
-    heating_threshold:
-      name: "Включить обогрев ниже (°C)"
+    temp_day:
+      name: "Целевая температура днем (°C)"
+      default: 22
+      selector:
+        number:
+          min: 10
+          max: 30
+    temp_night:
+      name: "Целевая температура ночью (°C)"
       default: 18
       selector:
         number:
-          min: 0
+          min: 10
           max: 30
-          step: 1
-    cooling_threshold:
-      name: "Включить охлаждение выше (°C)"
-      default: 25
-      selector:
-        number:
-          min: 20
-          max: 40
-          step: 1
     co2_threshold:
-      name: "Порог CO₂ (ppm)"
-      default: 800
+      name: "Макс. уровень CO₂ (ppm)"
+      default: 1000
       selector:
         number:
           min: 400
           max: 2000
+    humidity_threshold:
+      name: "Макс. влажность (%)"
+      default: 70
+      selector:
+        number:
+          min: 30
+          max: 90
+
+    # Расписание
+    schedule_day_start:
+      name: "Начало дневного режима"
+      selector:
+        time:
+          default: "07:00:00"
+    schedule_night_start:
+      name: "Начало ночного режима"
+      selector:
+        time:
+          default: "22:00:00"
 
 trigger:
-  - platform: numeric_state
-    entity_id: !input outdoor_temp_sensor
-  - platform: numeric_state
+  - platform: time_pattern
+    hours: "/1"  # Каждый час
+  - platform: state
+    entity_id: !input temp_indoor
+  - platform: state
     entity_id: !input co2_sensor
-
-condition: []
+    enabled: "{{ co2_sensor }}"
+  - platform: state
+    entity_id: !input humidity_indoor
+    enabled: "{{ humidity_indoor }}"
 
 action:
-  - choose:
-      # Режим обогрева
-      - conditions:
-          - condition: template
-            value_template: >
-              {{ states(!input outdoor_temp_sensor) | float < !input heating_threshold }}
-        sequence:
-          - service: climate.set_hvac_mode
-            target:
-              entity_id: !input turkov_climate
-            data:
-              hvac_mode: "heat"
-          - service: fan.set_speed
-            target:
-              entity_id: !input turkov_climate
-            data:
-              speed: "medium"
+  - variables:
+      current_mode: >
+        {% if now().time() >= as_timestamp(strptime(schedule_day_start, "%H:%M:%S")).time()
+          and now().time() < as_timestamp(strptime(schedule_night_start, "%H:%M:%S")).time() %}
+          "day"
+        {% else %}
+          "night"
+        {% endif %}
+      target_temp: "{{ temp_day if current_mode == 'day' else temp_night }}"
 
-      # Режим охлаждения
+  - choose:
+      # Режим ОХЛАЖДЕНИЯ/ОБОГРЕВА по температуре
       - conditions:
-          - condition: template
-            value_template: >
-              {{ states(!input outdoor_temp_sensor) | float > !input cooling_threshold }}
+          - "{{ states(temp_indoor) | float > target_temp + 1 }}"
         sequence:
           - service: climate.set_hvac_mode
             target:
               entity_id: !input turkov_climate
             data:
               hvac_mode: "cool"
+      - conditions:
+          - "{{ states(temp_indoor) | float < target_temp - 1 }}"
+        sequence:
+          - service: climate.set_hvac_mode
+            target:
+              entity_id: !input turkov_climate
+            data:
+              hvac_mode: "heat"
+
+      # Управление вентиляцией по CO₂
+      - conditions:
+          - "{{ co2_sensor and states(co2_sensor) | int > co2_threshold }}"
+        sequence:
           - service: fan.set_speed
             target:
               entity_id: !input turkov_climate
             data:
               speed: "high"
 
-      # Управление вентиляцией по CO₂
+      # Управление по влажности
       - conditions:
-          - condition: template
-            value_template: >
-              {{ states(!input co2_sensor) | int > !input co2_threshold }}
+          - "{{ humidity_indoor and states(humidity_indoor) | float > humidity_threshold }}"
+        sequence:
+          - service: climate.set_hvac_mode
+            target:
+              entity_id: !input turkov_climate
+            data:
+              hvac_mode: "dry"  # Режим осушения (если поддерживается)
+
+      # Коррекция по давлению (пример: повышение вентиляции при низком давлении)
+      - conditions:
+          - "{{ pressure_sensor and states(pressure_sensor) | float < 1000 }}"
         sequence:
           - service: fan.set_speed
             target:
               entity_id: !input turkov_climate
             data:
-              speed: "max"
-          - delay: "00:30:00"
-          - service: fan.set_speed
-            target:
-              entity_id: !input turkov_climate
-            data:
               speed: "medium"
-
     default: []
