@@ -32,7 +32,7 @@ blueprint:
     # --- Опциональные датчики (внутри/снаружи) ---
     temp_outdoor:
       name: "Температура снаружи"
-      default: ""
+      default: {}
       selector:
         entity:
           domain: sensor
@@ -40,7 +40,7 @@ blueprint:
 
     co2_sensor:
       name: "CO2 в помещении"
-      default: ""
+      default: {}
       selector:
         entity:
           domain: sensor
@@ -48,7 +48,7 @@ blueprint:
 
     pm25_sensor:
       name: "PM2.5 в помещении"
-      default: ""
+      default: {}
       selector:
         entity:
           domain: sensor
@@ -56,21 +56,21 @@ blueprint:
 
     voc_sensor:
       name: "VOC в помещении"
-      default: ""
+      default: {}
       selector:
         entity:
           domain: sensor
 
     no_sensor:
       name: "NOx в помещении"
-      default: ""
+      default: {}
       selector:
         entity:
           domain: sensor
 
     co2_outdoor_sensor:
       name: "CO2 снаружи"
-      default: ""
+      default: {}
       selector:
         entity:
           domain: sensor
@@ -78,7 +78,7 @@ blueprint:
 
     pm25_outdoor_sensor:
       name: "PM2.5 снаружи"
-      default: ""
+      default: {}
       selector:
         entity:
           domain: sensor
@@ -86,21 +86,21 @@ blueprint:
 
     voc_outdoor_sensor:
       name: "VOC снаружи"
-      default: ""
+      default: {}
       selector:
         entity:
           domain: sensor
 
     no_outdoor_sensor:
       name: "NOx снаружи"
-      default: ""
+      default: {}
       selector:
         entity:
           domain: sensor
 
     presence_home:
       name: "Присутствие дома"
-      default: ""
+      default: {}
       selector:
         entity:
           domain: binary_sensor
@@ -396,70 +396,70 @@ action:
 
       # Температура
       temp_in_entity: "{{ temp_indoor | string }}"
-      temp_in_valid: "{{ has_value(temp_in_entity) }}"
+      temp_in_valid: "{{ states(temp_in_entity) not in ['unknown', 'unavailable', 'none', 'None', ''] }}"
       temp_in: "{{ states(temp_in_entity) | float(0) }}"
 
       temp_out_entity: "{{ temp_outdoor | default('', true) | string }}"
-      temp_out_valid: "{{ '.' in temp_out_entity and has_value(temp_out_entity) }}"
+      temp_out_valid: "{{ '.' in temp_out_entity and states(temp_out_entity) not in ['unknown', 'unavailable', 'none', 'None', ''] }}"
       temp_out: "{{ states(temp_out_entity) | float(0) }}"
       cool_allowed: "{{ (not temp_out_valid) or (temp_out > outdoor_cool_min | float) }}"
 
       # Влажность
       humidity_entity: "{{ humidity_indoor | string }}"
-      humidity_active: "{{ has_value(humidity_entity) }}"
+      humidity_active: "{{ states(humidity_entity) not in ['unknown', 'unavailable', 'none', 'None', ''] }}"
       humidity_value: "{{ states(humidity_entity) | float(0) }}"
       humidity_boost: "{{ humidity_active and humidity_value >= (humidity_high | float) }}"
       humidity_clear: "{{ (not humidity_active) or humidity_value <= (humidity_low | float) }}"
 
       # CO2
       co2_entity: "{{ co2_sensor | default('', true) | string }}"
-      co2_active: "{{ '.' in co2_entity and has_value(co2_entity) }}"
+      co2_active: "{{ '.' in co2_entity and states(co2_entity) not in ['unknown', 'unavailable', 'none', 'None', ''] }}"
       co2_value: "{{ states(co2_entity) | float(0) }}"
       co2_boost: "{{ co2_active and co2_value >= (co2_high | float) }}"
       co2_clear: "{{ (not co2_active) or co2_value <= (co2_low | float) }}"
 
       # PM2.5 indoor
       pm25_entity: "{{ pm25_sensor | default('', true) | string }}"
-      pm25_active: "{{ '.' in pm25_entity and has_value(pm25_entity) }}"
+      pm25_active: "{{ '.' in pm25_entity and states(pm25_entity) not in ['unknown', 'unavailable', 'none', 'None', ''] }}"
       pm25_value: "{{ states(pm25_entity) | float(0) }}"
       pm25_boost: "{{ pm25_active and pm25_value >= (pm25_high | float) }}"
       pm25_clear: "{{ (not pm25_active) or pm25_value <= (pm25_low | float) }}"
 
       # PM2.5 outdoor (ограничение boost)
       pm25_outdoor_entity: "{{ pm25_outdoor_sensor | default('', true) | string }}"
-      pm25_outdoor_active: "{{ '.' in pm25_outdoor_entity and has_value(pm25_outdoor_entity) }}"
+      pm25_outdoor_active: "{{ '.' in pm25_outdoor_entity and states(pm25_outdoor_entity) not in ['unknown', 'unavailable', 'none', 'None', ''] }}"
       pm25_outdoor_value: "{{ states(pm25_outdoor_entity) | float(0) }}"
       pm25_outdoor_bad: "{{ pm25_outdoor_active and pm25_outdoor_value >= (pm25_outdoor_block | float) }}"
 
       # CO2 outdoor (ограничение boost)
       co2_outdoor_entity: "{{ co2_outdoor_sensor | default('', true) | string }}"
-      co2_outdoor_active: "{{ '.' in co2_outdoor_entity and has_value(co2_outdoor_entity) }}"
+      co2_outdoor_active: "{{ '.' in co2_outdoor_entity and states(co2_outdoor_entity) not in ['unknown', 'unavailable', 'none', 'None', ''] }}"
       co2_outdoor_value: "{{ states(co2_outdoor_entity) | float(0) }}"
       co2_outdoor_bad: "{{ co2_outdoor_active and co2_outdoor_value >= (co2_outdoor_block | float) }}"
 
       # VOC
       voc_entity: "{{ voc_sensor | default('', true) | string }}"
-      voc_active: "{{ '.' in voc_entity and has_value(voc_entity) }}"
+      voc_active: "{{ '.' in voc_entity and states(voc_entity) not in ['unknown', 'unavailable', 'none', 'None', ''] }}"
       voc_value: "{{ states(voc_entity) | float(0) }}"
       voc_boost: "{{ voc_active and voc_value >= (voc_high | float) }}"
       voc_clear: "{{ (not voc_active) or voc_value <= (voc_low | float) }}"
 
       # VOC outdoor (ограничение boost)
       voc_outdoor_entity: "{{ voc_outdoor_sensor | default('', true) | string }}"
-      voc_outdoor_active: "{{ '.' in voc_outdoor_entity and has_value(voc_outdoor_entity) }}"
+      voc_outdoor_active: "{{ '.' in voc_outdoor_entity and states(voc_outdoor_entity) not in ['unknown', 'unavailable', 'none', 'None', ''] }}"
       voc_outdoor_value: "{{ states(voc_outdoor_entity) | float(0) }}"
       voc_outdoor_bad: "{{ voc_outdoor_active and voc_outdoor_value >= (voc_outdoor_block | float) }}"
 
       # NO
       no_entity: "{{ no_sensor | default('', true) | string }}"
-      no_active: "{{ '.' in no_entity and has_value(no_entity) }}"
+      no_active: "{{ '.' in no_entity and states(no_entity) not in ['unknown', 'unavailable', 'none', 'None', ''] }}"
       no_value: "{{ states(no_entity) | float(0) }}"
       no_boost: "{{ no_active and no_value >= (no_high | float) }}"
       no_clear: "{{ (not no_active) or no_value <= (no_low | float) }}"
 
       # NO outdoor (ограничение boost)
       no_outdoor_entity: "{{ no_outdoor_sensor | default('', true) | string }}"
-      no_outdoor_active: "{{ '.' in no_outdoor_entity and has_value(no_outdoor_entity) }}"
+      no_outdoor_active: "{{ '.' in no_outdoor_entity and states(no_outdoor_entity) not in ['unknown', 'unavailable', 'none', 'None', ''] }}"
       no_outdoor_value: "{{ states(no_outdoor_entity) | float(0) }}"
       no_outdoor_bad: "{{ no_outdoor_active and no_outdoor_value >= (no_outdoor_block | float) }}"
 
