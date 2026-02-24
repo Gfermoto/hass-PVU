@@ -13,19 +13,19 @@
    - Производитель: Turkov
    - Модель: с рекуперацией тепла и влаги (3 ступени рекуперации)
    - Рабочий диапазон температур: до -35°C
-   - Особенности: встроенный ModBus RTU интерфейс
+   - Подключение: **ModBus RTU по IP** и/или **MQTT** (Wi‑Fi модуль, прошивка 2.0.0+)
 
-3. **Интеграция**: [hass-turkov](https://github.com/alryaz/hass-turkov)
-   - Поддержка всех функций установки через ModBus RTU
-   - Автоматическое обнаружение устройства
-   - Расширенная диагностика и мониторинг
+3. **Интеграция Turkov** (один из вариантов):
+   - **[hass-turkov](https://github.com/alryaz/hass-turkov)** — по IP (ModBus RTU), climate-сущность в HA
+   - **MQTT** — топики вида `turkov/<серийный_номер>/...`, см. раздел «Подключение Turkov по MQTT» ниже
 
 4. **Датчик качества воздуха**: [AirGradient](https://www.airgradient.com/)
    - Измеряемые параметры:
      * CO₂ (0-40000 ppm)
      * Температура (-10 до +60°C)
      * Относительная влажность (0-100%)
-     * PM2.5 (опционально)
+     * PM2.5, VOC, NO (опционально, в любой комбинации)
+     * Для расширенной логики можно использовать как внутренние, так и наружные сенсоры
    - Возможности:
      * WiFi подключение
      * MQTT интеграция
@@ -124,10 +124,34 @@
    # https://www.home-assistant.io/installation/
    ```
 
-2. **Установка интеграции Turkov**:
+2. **Установка интеграции Turkov** (по IP):
    - Добавьте репозиторий в HACS
    - Установите интеграцию
    - Перезагрузите Home Assistant
+
+   **Подключение Turkov по MQTT** (альтернатива или дополнение к IP):
+   - Документация: [Turkov — подключение по MQTT](https://turkov.ru/blog/articles/podklyuchenie_oborudovaniya_k_sistemam_umnyy_dom_po_protokolu_mqtt/)
+   - Нужен Wi‑Fi модуль с прошивкой **2.0.0** и выше.
+   - Базовый путь топиков: **`turkov/<серийный_номер>/...`** (серийный номер вида `X-XXXXXX-XX`, указан на устройстве и в веб-интерфейсе `http://turkov-X-XXXXXX-XX.local/`).
+
+   **Топики состояний** (устройство публикует):
+   | Топик | Описание |
+   |------|----------|
+   | `turkov/<serial>/status` | Подключение: `online` / `offline` |
+   | `turkov/<serial>/state/on` | Вкл/выкл |
+   | `turkov/<serial>/state/fan_speed` | Скорость вентиляторов |
+   | `turkov/<serial>/state/fan_mode` | Режим вентиляторов |
+   | `turkov/<serial>/state/temp_sp` | Уставка температуры |
+   | `turkov/<serial>/state/indoor_temperature` | Температура в помещении |
+   | `turkov/<serial>/state/outdoor_temperature` | Температура с улицы |
+   | `turkov/<serial>/state/supply_temperature` | Температура притока |
+   | `turkov/<serial>/state/indoor_humidity` | Влажность в помещении |
+   | `turkov/<serial>/state/filter` | Загрязнение фильтров |
+
+   **Топики команд** (HA публикует для управления):
+   - `turkov/<serial>/command/...` — подтопики обычно совпадают с именами из state (например `on`, `fan_speed`, `fan_mode`, `temp_sp`). Точный формат значений смотрите в документации Turkov или в исходящих сообщениях при управлении с веб-интерфейса/приложения.
+
+   После настройки MQTT в HA можно завести сенсоры по state-топикам и при необходимости управление через сервис `mqtt.publish` в топики `command/...`. Blueprint `pvu.yaml` рассчитан на climate-сущность (из hass-turkov); при использовании только MQTT нужно либо поднять climate через [MQTT Climate](https://www.home-assistant.io/integrations/climate.mqtt/) с этими топиками, либо доработать автоматизацию под прямые вызовы `mqtt.publish`.
 
 3. **Настройка AirGradient**:
    - Подключите датчик к сети WiFi
@@ -135,14 +159,25 @@
    - Добавьте сенсоры в Home Assistant
 
 4. **Импорт Blueprint**:
-   - Скопируйте файл `pvu_automation.yaml` в папку `blueprints/automation/`
+   - Скопируйте файл `pvu.yaml` в папку `blueprints/automation/`
    - Импортируйте через интерфейс Home Assistant
+
+   **Требования к датчикам в `pvu.yaml`**:
+   - **Обязательные**: температура в помещении и влажность в помещении.
+   - **Опциональные**: все остальные (внутренние и наружные CO₂ / PM2.5 / VOC / NO, наружная температура, presence).
+   - Система работает с любой комбинацией опциональных сенсоров.
+
+   **Поведение blueprint** (`pvu.yaml`):
+   - Приоритет выше у **внутренних** датчиков качества воздуха.
+   - **Наружные** датчики используются как корректирующий фактор (ограничение слишком агрессивного boost при плохом наружном воздухе).
+   - Для температуры и качества воздуха используется гистерезис (включение/возврат по разным порогам), чтобы избежать «дребезга».
+   - Реакция на обязательные датчики — по их изменению, плюс периодический пересчет по таймеру каждые 2 минуты.
 
 ### Конфигурация
 
 1. **Основные параметры** (`configuration.yaml`):
    ```yaml
-   # Пример базовой конфигурации
+   # Пример базовой конфигурации (Turkov по IP через hass-turkov)
    climate:
      - platform: turkov
        name: "PVU"
@@ -168,6 +203,26 @@
        name: "Telegram Notifications"
        chat_id: "YOUR_CHAT_ID"
        default_message: "Уведомление от системы вентиляции"
+   ```
+
+   **Пример сенсоров Turkov по MQTT** (подставьте свой серийный номер вместо `X-XXXXXX-XX`):
+   ```yaml
+   mqtt:
+     sensor:
+       - name: "Turkov температура в помещении"
+         state_topic: "turkov/X-XXXXXX-XX/state/indoor_temperature"
+         unit_of_measurement: "°C"
+         device_class: temperature
+       - name: "Turkov влажность в помещении"
+         state_topic: "turkov/X-XXXXXX-XX/state/indoor_humidity"
+         unit_of_measurement: "%"
+         device_class: humidity
+       - name: "Turkov температура с улицы"
+         state_topic: "turkov/X-XXXXXX-XX/state/outdoor_temperature"
+         unit_of_measurement: "°C"
+         device_class: temperature
+       - name: "Turkov статус"
+         state_topic: "turkov/X-XXXXXX-XX/status"
    ```
 
 2. **Автоматизации** (`automations.yaml`):
