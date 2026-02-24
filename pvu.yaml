@@ -1,5 +1,5 @@
 blueprint:
-  name: "Turkov PVU: идеальная автоматика (temp + air quality)"
+  name: "ПВУ Turkov: температура и качество воздуха"
   description: |
     Универсальная автоматика ПВУ Turkov для Home Assistant.
     Обязательные датчики: температура и влажность в помещении.
@@ -11,14 +11,12 @@ blueprint:
     # --- Устройство и обязательные датчики ---
     turkov_climate:
       name: "ПВУ Turkov (climate)"
-      description: "Выберите climate-сущность ПВУ. Должна поддерживать hvac_mode и fan_mode."
       selector:
         entity:
           domain: climate
 
     temp_indoor:
       name: "Температура в помещении"
-      description: "Обязательный датчик для расчета heating/cooling."
       selector:
         entity:
           domain: sensor
@@ -26,7 +24,6 @@ blueprint:
 
     humidity_indoor:
       name: "Влажность в помещении"
-      description: "Обязательный датчик. При превышении порога включается dry."
       selector:
         entity:
           domain: sensor
@@ -35,8 +32,7 @@ blueprint:
     # --- Опциональные датчики (внутри/снаружи) ---
     temp_outdoor:
       name: "Температура снаружи"
-      description: "Опционально. Ниже порога охлаждение не включается."
-      default: {}
+      default: ""
       selector:
         entity:
           domain: sensor
@@ -44,8 +40,7 @@ blueprint:
 
     co2_sensor:
       name: "CO2 в помещении"
-      description: "Опционально. Оставьте пустым, если датчика нет."
-      default: {}
+      default: ""
       selector:
         entity:
           domain: sensor
@@ -53,8 +48,7 @@ blueprint:
 
     pm25_sensor:
       name: "PM2.5 в помещении"
-      description: "Опционально. Оставьте пустым, если датчика нет."
-      default: {}
+      default: ""
       selector:
         entity:
           domain: sensor
@@ -62,24 +56,21 @@ blueprint:
 
     voc_sensor:
       name: "VOC в помещении"
-      description: "Опционально. Единицы зависят от датчика (ppb/ug/m3)."
-      default: {}
+      default: ""
       selector:
         entity:
           domain: sensor
 
     no_sensor:
-      name: "NO в помещении"
-      description: "Опционально. Единицы зависят от датчика."
-      default: {}
+      name: "NOx в помещении"
+      default: ""
       selector:
         entity:
           domain: sensor
 
     co2_outdoor_sensor:
       name: "CO2 снаружи"
-      description: "Опционально. Используется как ограничение агрессивного boost."
-      default: {}
+      default: ""
       selector:
         entity:
           domain: sensor
@@ -87,8 +78,7 @@ blueprint:
 
     pm25_outdoor_sensor:
       name: "PM2.5 снаружи"
-      description: "Опционально. Используется как ограничение агрессивного boost."
-      default: {}
+      default: ""
       selector:
         entity:
           domain: sensor
@@ -96,24 +86,21 @@ blueprint:
 
     voc_outdoor_sensor:
       name: "VOC снаружи"
-      description: "Опционально. Единицы зависят от датчика (ppb/ug/m3)."
-      default: {}
+      default: ""
       selector:
         entity:
           domain: sensor
 
     no_outdoor_sensor:
-      name: "NO снаружи"
-      description: "Опционально. Используется как ограничение агрессивного boost."
-      default: {}
+      name: "NOx снаружи"
+      default: ""
       selector:
         entity:
           domain: sensor
 
     presence_home:
       name: "Присутствие дома"
-      description: "Опционально. on=дома, off=нет дома. При off используется temp_away."
-      default: {}
+      default: ""
       selector:
         entity:
           domain: binary_sensor
@@ -164,7 +151,6 @@ blueprint:
 
     temp_hysteresis_on:
       name: "Гистерезис: включение (°C)"
-      description: "Отклонение от target, после которого включается heat/cool."
       default: 1.0
       selector:
         number:
@@ -175,7 +161,6 @@ blueprint:
 
     temp_hysteresis_off:
       name: "Гистерезис: возврат в норму (°C)"
-      description: "Зона вокруг target для возврата в нормальный HVAC режим."
       default: 0.5
       selector:
         number:
@@ -186,7 +171,6 @@ blueprint:
 
     outdoor_cool_min:
       name: "Охлаждение: мин. t снаружи (°C)"
-      description: "Если наружная температура ниже этого значения, cooling не включается."
       default: 18
       selector:
         number:
@@ -197,7 +181,6 @@ blueprint:
 
     humidity_high:
       name: "Влажность: включить dry (%)"
-      description: "При влажности >= этого значения включается dry."
       default: 70
       selector:
         number:
@@ -208,7 +191,6 @@ blueprint:
 
     humidity_low:
       name: "Влажность: выключить dry (%)"
-      description: "При влажности <= этого значения dry отключается. Должно быть меньше humidity_high."
       default: 60
       selector:
         number:
@@ -229,7 +211,6 @@ blueprint:
 
     co2_low:
       name: "CO2: порог возврата (ppm)"
-      description: "Должно быть меньше co2_high."
       default: 750
       selector:
         number:
@@ -240,7 +221,6 @@ blueprint:
 
     co2_outdoor_block:
       name: "CO2 снаружи: блок boost (ppm)"
-      description: "Если наружный CO2 >= этого значения, boost ограничивается."
       default: 1200
       selector:
         number:
@@ -261,7 +241,6 @@ blueprint:
 
     pm25_low:
       name: "PM2.5: порог возврата (µg/m³)"
-      description: "Должно быть меньше pm25_high."
       default: 25
       selector:
         number:
@@ -272,7 +251,6 @@ blueprint:
 
     pm25_outdoor_block:
       name: "PM2.5 снаружи: блок boost (µg/m³)"
-      description: "Если наружный PM2.5 >= этого значения, boost ограничивается."
       default: 100
       selector:
         number:
@@ -293,7 +271,6 @@ blueprint:
 
     voc_low:
       name: "VOC: порог возврата (ед. датчика)"
-      description: "Должно быть меньше voc_high."
       default: 300
       selector:
         number:
@@ -304,7 +281,6 @@ blueprint:
 
     voc_outdoor_block:
       name: "VOC снаружи: блок boost (ед. датчика)"
-      description: "Если наружный VOC >= этого значения, boost ограничивается."
       default: 500
       selector:
         number:
@@ -314,55 +290,50 @@ blueprint:
           mode: box
 
     no_high:
-      name: "NO: порог boost (ед. датчика)"
-      default: 100
+      name: "NOx: порог boost"
+      default: 20
       selector:
         number:
-          min: 5
-          max: 1000
+          min: 1
+          max: 500
           step: 1
           mode: box
 
     no_low:
-      name: "NO: порог возврата (ед. датчика)"
-      description: "Должно быть меньше no_high."
-      default: 80
+      name: "NOx: порог возврата"
+      default: 10
       selector:
         number:
-          min: 3
-          max: 900
+          min: 1
+          max: 500
           step: 1
           mode: box
 
     no_outdoor_block:
-      name: "NO снаружи: блок boost (ед. датчика)"
-      description: "Если наружный NO >= этого значения, boost ограничивается."
-      default: 120
+      name: "NOx снаружи: блок boost"
+      default: 20
       selector:
         number:
-          min: 5
-          max: 3000
+          min: 1
+          max: 500
           step: 1
           mode: box
 
     # --- Режимы устройства (подстройка под конкретную модель) ---
     fan_mode_normal:
       name: "Вентилятор: норма"
-      description: "Значение climate.set_fan_mode, например low/medium."
       default: "low"
       selector:
         text:
 
     fan_mode_boost:
       name: "Вентилятор: boost"
-      description: "Значение climate.set_fan_mode для интенсивной вентиляции, обычно high."
       default: "high"
       selector:
         text:
 
     hvac_mode_normal:
       name: "HVAC: норма"
-      description: "Обычно auto или fan_only (зависит от Turkov)."
       default: "auto"
       selector:
         text:
