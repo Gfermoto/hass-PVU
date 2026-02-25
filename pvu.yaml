@@ -679,26 +679,28 @@ action:
     desired_fan_mode: "{% set boost_count = air_boost_count | int(0) %}\n{% if is_away and away_behavior == 'off' %}\n  off\n{% elif outdoor_air_bad and boost_count >= 1 %}\n  {{ fan_mode_medium | string }}\n{% elif outdoor_air_bad %}\n  {{ fan_mode_low | string }}\n{% elif boost_count >= 2 %}\n  {{ fan_mode_high | string }}\n{% elif boost_count == 1 %}\n  {{ fan_mode_medium | string }}\n{% elif all_air_clear and humidity_clear %}\n  {{ fan_mode_low | string }}\n{% else %}\n  {{ '' }}\n{% endif %}\n"
 - choose:
   # Шаг 1: применяем HVAC только если режим действительно меняется.
-  - conditions: '{{ desired_hvac_mode | length > 0 and desired_hvac_mode != current_hvac_mode
-      and desired_hvac_mode in supported_hvac_modes
+  - conditions: '{{ (desired_hvac_mode | trim) | length > 0 and (desired_hvac_mode
+      | trim) != current_hvac_mode
+      and (desired_hvac_mode | trim) in supported_hvac_modes
       }}'
     sequence:
     - service: climate.set_hvac_mode
       target:
         entity_id: !input turkov_climate
       data:
-        hvac_mode: '{{ desired_hvac_mode }}'
+        hvac_mode: '{{ desired_hvac_mode | trim }}'
   default: []
 - choose:
   # Шаг 2: применяем fan_mode только если режим действительно меняется.
-  - conditions: '{{ desired_fan_mode | length > 0 and desired_fan_mode != current_fan_mode
-      and desired_fan_mode in supported_fan_modes
+  - conditions: '{{ (desired_fan_mode | trim) | length > 0 and (desired_fan_mode
+      | trim) != current_fan_mode
+      and (desired_fan_mode | trim) in supported_fan_modes
       }}'
     sequence:
     - service: climate.set_fan_mode
       target:
         entity_id: !input turkov_climate
       data:
-        fan_mode: '{{ desired_fan_mode }}'
+        fan_mode: '{{ desired_fan_mode | trim }}'
   default: []
 mode: single
