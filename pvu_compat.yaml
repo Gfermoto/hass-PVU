@@ -1,0 +1,140 @@
+blueprint:
+  name: "ПВУ Turkov: совместимый минимум"
+  description: >
+    Диагностический совместимый blueprint для проверки сохранения в HA.
+    Только обязательные датчики и базовая логика температуры/влажности.
+  domain: automation
+  input:
+    turkov_climate:
+      name: "ПВУ Turkov (climate)"
+      selector:
+        entity:
+          domain: climate
+
+    temp_indoor:
+      name: "Температура в помещении"
+      selector:
+        entity:
+          domain: sensor
+          device_class: temperature
+
+    humidity_indoor:
+      name: "Влажность в помещении"
+      selector:
+        entity:
+          domain: sensor
+          device_class: humidity
+
+    temp_day:
+      name: "Температура днем (°C)"
+      default: 22
+      selector:
+        number:
+          min: 10
+          max: 30
+          step: 0.5
+          mode: box
+
+    temp_night:
+      name: "Температура ночью (°C)"
+      default: 19
+      selector:
+        number:
+          min: 10
+          max: 30
+          step: 0.5
+          mode: box
+
+    humidity_high:
+      name: "Влажность: включить dry (%)"
+      default: 70
+      selector:
+        number:
+          min: 30
+          max: 95
+          step: 1
+          mode: box
+
+    humidity_low:
+      name: "Влажность: выключить dry (%)"
+      default: 60
+      selector:
+        number:
+          min: 20
+          max: 90
+          step: 1
+          mode: box
+
+    schedule_day_start:
+      name: "День: начало"
+      default: "07:00:00"
+      selector:
+        time:
+
+    schedule_night_start:
+      name: "Ночь: начало"
+      default: "23:00:00"
+      selector:
+        time:
+
+trigger:
+  - platform: time_pattern
+    minutes: "/5"
+  - platform: state
+    entity_id: !input temp_indoor
+  - platform: state
+    entity_id: !input humidity_indoor
+
+action:
+  - variables:
+      now_hms: "{{ now().strftime('%H:%M:%S') }}"
+      day_start: "{{ (schedule_day_start ~ ':00')[:8] if (schedule_day_start | string | length) == 5 else (schedule_day_start | string)[:8] }}"
+      night_start: "{{ (schedule_night_start ~ ':00')[:8] if (schedule_night_start | string | length) == 5 else (schedule_night_start | string)[:8] }}"
+      is_day: >
+        {% set ds = day_start %}
+        {% set ns = night_start %}
+        {% set t = now_hms %}
+        {% if ds <= ns %}
+          {{ ds <= t and t < ns }}
+        {% else %}
+          {{ t >= ds or t < ns }}
+        {% endif %}
+      target_temp: "{{ temp_day | float if is_day else temp_night | float }}"
+      t_in: "{{ states(temp_indoor) | float(0) }}"
+      h_in: "{{ states(humidity_indoor) | float(0) }}"
+
+  - choose:
+      - conditions: "{{ h_in >= (humidity_high | float) }}"
+        sequence:
+          - service: climate.set_hvac_mode
+            target:
+              entity_id: !input turkov_climate
+            data:
+              hvac_mode: "dry"
+
+      - conditions: "{{ t_in > (target_temp + 1) }}"
+        sequence:
+          - service: climate.set_hvac_mode
+            target:
+              entity_id: !input turkov_climate
+            data:
+              hvac_mode: "cool"
+
+      - conditions: "{{ t_in < (target_temp - 1) }}"
+        sequence:
+          - service: climate.set_hvac_mode
+            target:
+              entity_id: !input turkov_climate
+            data:
+              hvac_mode: "heat"
+
+      - conditions: "{{ h_in <= (humidity_low | float) and t_in >= (target_temp - 0.5) and t_in <= (target_temp + 0.5) }}"
+        sequence:
+          - service: climate.set_hvac_mode
+            target:
+              entity_id: !input turkov_climate
+            data:
+              hvac_mode: "auto"
+    default: []
+
+mode: single
