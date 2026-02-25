@@ -1,5 +1,5 @@
 blueprint:
-  name: 'ПВУ Turkov: температура и качество воздуха (v0.2.3)'
+  name: 'ПВУ Turkov: температура и качество воздуха (v0.2.4)'
   description: 'Универсальная автоматика ПВУ Turkov для Home Assistant.
 
     Обязательные датчики: температура и влажность в помещении.
@@ -384,46 +384,102 @@ blueprint:
           max: 500.0
           step: 1.0
           mode: box
-    fan_mode_normal:
-      name: 'Вентилятор: норма'
+    fan_mode_low:
+      name: 'Вентилятор: низкая скорость'
       default: low
-      description: Значение fan_mode при нормальных условиях (обычно low или medium).
+      description: Базовая скорость вентилятора при нормальных условиях (рекомендовано low для Zenit Heco).
       selector:
-        text:
-          multiline: false
-          multiple: false
-    fan_mode_boost:
-      name: 'Вентилятор: boost'
+        select:
+          options:
+          - label: low
+            value: low
+          - label: medium
+            value: medium
+          - label: high
+            value: high
+          - label: auto
+            value: auto
+          - label: off
+            value: off
+    fan_mode_medium:
+      name: 'Вентилятор: средняя скорость'
+      default: medium
+      description: Средняя скорость при умеренном ухудшении воздуха или ограничении boost снаружи (рекомендовано medium).
+      selector:
+        select:
+          options:
+          - label: low
+            value: low
+          - label: medium
+            value: medium
+          - label: high
+            value: high
+          - label: auto
+            value: auto
+          - label: off
+            value: off
+    fan_mode_high:
+      name: 'Вентилятор: высокая скорость'
       default: high
-      description: Значение fan_mode при плохом качестве воздуха (обычно high).
+      description: Максимальная скорость при выраженном ухудшении воздуха/влажности (рекомендовано high).
       selector:
-        text:
-          multiline: false
-          multiple: false
+        select:
+          options:
+          - label: low
+            value: low
+          - label: medium
+            value: medium
+          - label: high
+            value: high
+          - label: auto
+            value: auto
+          - label: off
+            value: off
     hvac_mode_ventilation:
       name: 'HVAC: вентиляция'
       default: fan_only
-      description: Режим вентиляции в нормальных условиях (обычно fan_only).
+      description: Режим вентиляции в нормальных условиях (рекомендовано fan_only для Zenit Heco).
       selector:
-        text:
-          multiline: false
-          multiple: false
+        select:
+          options:
+          - label: fan_only
+            value: fan_only
+          - label: heat
+            value: heat
+          - label: cool
+            value: cool
+          - label: off
+            value: off
     hvac_mode_heat:
       name: 'HVAC: нагрев'
       default: heat
-      description: Режим для нагрева.
+      description: Режим нагрева (рекомендовано heat).
       selector:
-        text:
-          multiline: false
-          multiple: false
+        select:
+          options:
+          - label: heat
+            value: heat
+          - label: cool
+            value: cool
+          - label: fan_only
+            value: fan_only
+          - label: off
+            value: off
     hvac_mode_cool:
       name: 'HVAC: охлаждение'
       default: cool
-      description: Режим для охлаждения.
+      description: Режим охлаждения (рекомендовано cool).
       selector:
-        text:
-          multiline: false
-          multiple: false
+        select:
+          options:
+          - label: cool
+            value: cool
+          - label: heat
+            value: heat
+          - label: fan_only
+            value: fan_only
+          - label: off
+            value: off
   source_url: https://github.com/Gfermoto/hass-PVU/blob/main/pvu.yaml
 trigger:
 # Пересчёт каждые 2 минуты + при изменении обязательных датчиков.
@@ -472,8 +528,9 @@ action:
     no_high: !input no_high
     no_low: !input no_low
     no_outdoor_block: !input no_outdoor_block
-    fan_mode_normal: !input fan_mode_normal
-    fan_mode_boost: !input fan_mode_boost
+    fan_mode_low: !input fan_mode_low
+    fan_mode_medium: !input fan_mode_medium
+    fan_mode_high: !input fan_mode_high
     hvac_mode_ventilation: !input hvac_mode_ventilation
     hvac_mode_heat: !input hvac_mode_heat
     hvac_mode_cool: !input hvac_mode_cool
@@ -594,6 +651,7 @@ action:
     no_outdoor_bad: '{{ no_outdoor_active and no_outdoor_value >= (no_outdoor_block
       | float) }}'
     any_air_boost: '{{ co2_boost or pm25_boost or voc_boost or no_boost }}'
+    air_boost_count: "{{ (1 if co2_boost else 0)\n + (1 if pm25_boost else 0)\n + (1 if voc_boost else 0)\n + (1 if no_boost else 0)\n + (1 if humidity_boost else 0)\n}}"
     all_air_clear: '{{ co2_clear and pm25_clear and voc_clear and no_clear }}'
     outdoor_air_bad: '{{ pm25_outdoor_bad or co2_outdoor_bad or voc_outdoor_bad or
       no_outdoor_bad }}'
@@ -612,14 +670,13 @@ action:
       | float - temp_hysteresis_off | float) and temp_in <= (target_temp | float +
       temp_hysteresis_off | float) %}\n  {{ hvac_mode_ventilation | string }}\n{% else
       %}\n  {{ '' }}\n{% endif %}\n"
-    # Логика вентилятора:
-    # 1) если внутри плохо (any_air_boost или humidity_boost) -> boost
-    # 2) если снаружи плохо -> normal (ограничение)
-    # 3) если всё в норме -> normal
-    desired_fan_mode: "{% if is_away and away_behavior == 'off' %}\n  off\n{% elif any_air_boost or humidity_boost %}\n  {{ fan_mode_boost
-      | string }}\n{% elif outdoor_air_bad %}\n  {{ fan_mode_normal | string }}\n{%
-      elif all_air_clear and humidity_clear %}\n  {{ fan_mode_normal | string }}\n{%
-      else %}\n  {{ '' }}\n{% endif %}\n"
+    # Логика вентилятора (3 ступени):
+    # 1) Если никого нет и выбран away=off -> off
+    # 2) Если снаружи воздух плохой, ограничиваем разгон (max = medium)
+    # 3) Если внутри выраженно плохо (>=2 триггера) -> high
+    # 4) Если внутри умеренно плохо (1 триггер) -> medium
+    # 5) Если всё чисто -> low
+    desired_fan_mode: "{% set boost_count = air_boost_count | int(0) %}\n{% if is_away and away_behavior == 'off' %}\n  off\n{% elif outdoor_air_bad and boost_count >= 1 %}\n  {{ fan_mode_medium | string }}\n{% elif outdoor_air_bad %}\n  {{ fan_mode_low | string }}\n{% elif boost_count >= 2 %}\n  {{ fan_mode_high | string }}\n{% elif boost_count == 1 %}\n  {{ fan_mode_medium | string }}\n{% elif all_air_clear and humidity_clear %}\n  {{ fan_mode_low | string }}\n{% else %}\n  {{ '' }}\n{% endif %}\n"
 - choose:
   # Шаг 1: применяем HVAC только если режим действительно меняется.
   - conditions: '{{ desired_hvac_mode | length > 0 and desired_hvac_mode != current_hvac_mode
