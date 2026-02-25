@@ -37,7 +37,7 @@ blueprint:
           reorder: false
     humidity_indoor:
       name: Влажность в помещении
-      description: Обязательный датчик. По нему включается/выключается dry.
+      description: Обязательный датчик. По нему включается/выключается усиленная вентиляция.
       selector:
         entity:
           domain:
@@ -246,9 +246,9 @@ blueprint:
           step: 1.0
           mode: box
     humidity_high:
-      name: 'Влажность: включить dry (%)'
+      name: 'Влажность: включить boost (%)'
       default: 70
-      description: При достижении этого порога включается режим осушения dry.
+      description: При достижении этого порога включается усиленная вентиляция (boost).
       selector:
         number:
           min: 30.0
@@ -256,9 +256,9 @@ blueprint:
           step: 1.0
           mode: box
     humidity_low:
-      name: 'Влажность: выключить dry (%)'
+      name: 'Влажность: выключить boost (%)'
       default: 60
-      description: При снижении до этого порога dry выключается.
+      description: При снижении до этого порога усиленная вентиляция выключается.
       selector:
         number:
           min: 20.0
@@ -413,14 +413,6 @@ blueprint:
         text:
           multiline: false
           multiple: false
-    hvac_mode_dry:
-      name: 'HVAC: осушение'
-      default: dry
-      description: Режим для осушения.
-      selector:
-        text:
-          multiline: false
-          multiple: false
   source_url: https://github.com/Gfermoto/hass-PVU/blob/main/pvu.yaml
 trigger:
 # Пересчёт каждые 2 минуты + при изменении обязательных датчиков.
@@ -474,7 +466,6 @@ action:
     hvac_mode_normal: !input hvac_mode_normal
     hvac_mode_heat: !input hvac_mode_heat
     hvac_mode_cool: !input hvac_mode_cool
-    hvac_mode_dry: !input hvac_mode_dry
     presence_mode: !input presence_mode
     presence_away_state: !input presence_away_state
 - variables:
@@ -602,10 +593,7 @@ action:
       true) }}'
     supported_fan_modes: '{{ state_attr(turkov_climate, ''fan_modes'') | default([],
       true) }}'
-    dry_supported: '{{ (hvac_mode_dry | string) in supported_hvac_modes }}'
-    desired_hvac_mode: "{% if humidity_boost and dry_supported %}\n  {{ hvac_mode_dry
-      | string }}\n{%
-      elif temp_in_valid and temp_in > (target_temp | float + temp_hysteresis_on |
+    desired_hvac_mode: "{% if temp_in_valid and temp_in > (target_temp | float + temp_hysteresis_on |
       float) and cool_allowed %}\n  {{ hvac_mode_cool | string }}\n{% elif temp_in_valid
       and temp_in < (target_temp | float - temp_hysteresis_on | float) %}\n  {{ hvac_mode_heat
       | string }}\n{% elif humidity_clear and temp_in_valid and temp_in >= (target_temp
