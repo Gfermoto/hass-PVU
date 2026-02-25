@@ -176,6 +176,17 @@ blueprint:
         text:
           multiline: false
           multiple: false
+    away_behavior:
+      name: Поведение в отсутствии
+      description: Что делать, когда никого нет дома.
+      default: maintain
+      selector:
+        select:
+          options:
+          - label: Поддерживать режим в отсутствии (temp_away)
+            value: maintain
+          - label: Выключать установку
+            value: off
     schedule_day_start:
       name: 'День: начало'
       default: 07:00:00
@@ -389,10 +400,10 @@ blueprint:
         text:
           multiline: false
           multiple: false
-    hvac_mode_normal:
-      name: 'HVAC: норма'
-      default: auto
-      description: Режим климата в норме (обычно auto).
+    hvac_mode_ventilation:
+      name: 'HVAC: вентиляция'
+      default: fan_only
+      description: Режим вентиляции в нормальных условиях (обычно fan_only).
       selector:
         text:
           multiline: false
@@ -463,9 +474,10 @@ action:
     no_outdoor_block: !input no_outdoor_block
     fan_mode_normal: !input fan_mode_normal
     fan_mode_boost: !input fan_mode_boost
-    hvac_mode_normal: !input hvac_mode_normal
+    hvac_mode_ventilation: !input hvac_mode_ventilation
     hvac_mode_heat: !input hvac_mode_heat
     hvac_mode_cool: !input hvac_mode_cool
+    away_behavior: !input away_behavior
     presence_mode: !input presence_mode
     presence_away_state: !input presence_away_state
 - variables:
@@ -593,18 +605,18 @@ action:
       true) }}'
     supported_fan_modes: '{{ state_attr(turkov_climate, ''fan_modes'') | default([],
       true) }}'
-    desired_hvac_mode: "{% if temp_in_valid and temp_in > (target_temp | float + temp_hysteresis_on |
+    desired_hvac_mode: "{% if is_away and away_behavior == 'off' %}\n  off\n{% elif temp_in_valid and temp_in > (target_temp | float + temp_hysteresis_on |
       float) and cool_allowed %}\n  {{ hvac_mode_cool | string }}\n{% elif temp_in_valid
       and temp_in < (target_temp | float - temp_hysteresis_on | float) %}\n  {{ hvac_mode_heat
       | string }}\n{% elif humidity_clear and temp_in_valid and temp_in >= (target_temp
       | float - temp_hysteresis_off | float) and temp_in <= (target_temp | float +
-      temp_hysteresis_off | float) %}\n  {{ hvac_mode_normal | string }}\n{% else
+      temp_hysteresis_off | float) %}\n  {{ hvac_mode_ventilation | string }}\n{% else
       %}\n  {{ '' }}\n{% endif %}\n"
     # Логика вентилятора:
     # 1) если внутри плохо (any_air_boost или humidity_boost) -> boost
     # 2) если снаружи плохо -> normal (ограничение)
     # 3) если всё в норме -> normal
-    desired_fan_mode: "{% if any_air_boost or humidity_boost %}\n  {{ fan_mode_boost
+    desired_fan_mode: "{% if is_away and away_behavior == 'off' %}\n  off\n{% elif any_air_boost or humidity_boost %}\n  {{ fan_mode_boost
       | string }}\n{% elif outdoor_air_bad %}\n  {{ fan_mode_normal | string }}\n{%
       elif all_air_clear and humidity_clear %}\n  {{ fan_mode_normal | string }}\n{%
       else %}\n  {{ '' }}\n{% endif %}\n"
