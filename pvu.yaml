@@ -32,7 +32,7 @@ blueprint:
     # --- Опциональные датчики (внутри/снаружи) ---
     temp_outdoor:
       name: "Температура снаружи"
-      default: {}
+      default: []
       selector:
         entity:
           domain: sensor
@@ -40,7 +40,7 @@ blueprint:
 
     co2_sensor:
       name: "CO2 в помещении"
-      default: {}
+      default: []
       selector:
         entity:
           domain: sensor
@@ -48,7 +48,7 @@ blueprint:
 
     pm25_sensor:
       name: "PM2.5 в помещении"
-      default: {}
+      default: []
       selector:
         entity:
           domain: sensor
@@ -56,21 +56,21 @@ blueprint:
 
     voc_sensor:
       name: "VOC в помещении"
-      default: {}
+      default: []
       selector:
         entity:
           domain: sensor
 
     no_sensor:
       name: "NOx в помещении"
-      default: {}
+      default: []
       selector:
         entity:
           domain: sensor
 
     co2_outdoor_sensor:
       name: "CO2 снаружи"
-      default: {}
+      default: []
       selector:
         entity:
           domain: sensor
@@ -78,7 +78,7 @@ blueprint:
 
     pm25_outdoor_sensor:
       name: "PM2.5 снаружи"
-      default: {}
+      default: []
       selector:
         entity:
           domain: sensor
@@ -86,21 +86,21 @@ blueprint:
 
     voc_outdoor_sensor:
       name: "VOC снаружи"
-      default: {}
+      default: []
       selector:
         entity:
           domain: sensor
 
     no_outdoor_sensor:
       name: "NOx снаружи"
-      default: {}
+      default: []
       selector:
         entity:
           domain: sensor
 
     presence_home:
       name: "Присутствие дома"
-      default: {}
+      default: []
       selector:
         entity:
           domain: binary_sensor
