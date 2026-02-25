@@ -17,6 +17,7 @@ blueprint:
   input:
     turkov_climate:
       name: ПВУ Turkov (climate)
+      description: Основная climate-сущность вашей ПВУ Turkov.
       selector:
         entity:
           domain:
@@ -25,6 +26,7 @@ blueprint:
           reorder: false
     temp_indoor:
       name: Температура в помещении
+      description: Обязательный датчик. По нему выбирается нагрев/охлаждение.
       selector:
         entity:
           domain:
@@ -35,6 +37,7 @@ blueprint:
           reorder: false
     humidity_indoor:
       name: Влажность в помещении
+      description: Обязательный датчик. По нему включается/выключается dry.
       selector:
         entity:
           domain:
@@ -46,6 +49,7 @@ blueprint:
     temp_outdoor:
       name: Температура снаружи
       default: []
+      description: Опционально. Используется как ограничение включения cooling.
       selector:
         entity:
           domain:
@@ -137,6 +141,7 @@ blueprint:
     presence_home:
       name: Источник присутствия (опционально)
       default: []
+      description: Можно выбрать binary_sensor / person / group / alarm_control_panel.
       selector:
         entity:
           domain:
@@ -148,7 +153,7 @@ blueprint:
           reorder: false
     presence_mode:
       name: Логика присутствия
-      description: Как интерпретировать состояние выбранной сущности присутствия.
+      description: Как считать «нет дома» для выбранной сущности присутствия.
       default: auto
       selector:
         select:
@@ -165,7 +170,7 @@ blueprint:
             value: custom
     presence_away_state:
       name: Пользовательское состояние "нет дома"
-      description: Используется только если выбран режим "Пользовательское состояние".
+      description: Используется только в режиме "Пользовательское состояние".
       default: not_home
       selector:
         text:
@@ -174,11 +179,13 @@ blueprint:
     schedule_day_start:
       name: 'День: начало'
       default: 07:00:00
+      description: Время начала дневного режима.
       selector:
         time: {}
     schedule_night_start:
       name: 'Ночь: начало'
       default: '23:00:00'
+      description: Время начала ночного режима.
       selector:
         time: {}
     temp_day:
@@ -211,6 +218,7 @@ blueprint:
     temp_hysteresis_on:
       name: 'Гистерезис: включение (°C)'
       default: 1.0
+      description: Насколько температура должна отклониться от цели для смены режима.
       selector:
         number:
           min: 0.3
@@ -220,6 +228,7 @@ blueprint:
     temp_hysteresis_off:
       name: 'Гистерезис: возврат в норму (°C)'
       default: 0.5
+      description: Зона возврата в нормальный режим вокруг целевой температуры.
       selector:
         number:
           min: 0.2
@@ -229,6 +238,7 @@ blueprint:
     outdoor_cool_min:
       name: 'Охлаждение: мин. t снаружи (°C)'
       default: 18
+      description: Ниже этого значения охлаждение не включается.
       selector:
         number:
           min: -20.0
@@ -238,6 +248,7 @@ blueprint:
     humidity_high:
       name: 'Влажность: включить dry (%)'
       default: 70
+      description: При достижении этого порога включается режим осушения dry.
       selector:
         number:
           min: 30.0
@@ -247,6 +258,7 @@ blueprint:
     humidity_low:
       name: 'Влажность: выключить dry (%)'
       default: 60
+      description: При снижении до этого порога dry выключается.
       selector:
         number:
           min: 20.0
@@ -364,6 +376,7 @@ blueprint:
     fan_mode_normal:
       name: 'Вентилятор: норма'
       default: low
+      description: Значение fan_mode при нормальных условиях (обычно low или medium).
       selector:
         text:
           multiline: false
@@ -371,6 +384,7 @@ blueprint:
     fan_mode_boost:
       name: 'Вентилятор: boost'
       default: high
+      description: Значение fan_mode при плохом качестве воздуха (обычно high).
       selector:
         text:
           multiline: false
@@ -378,6 +392,7 @@ blueprint:
     hvac_mode_normal:
       name: 'HVAC: норма'
       default: auto
+      description: Режим климата в норме (обычно auto).
       selector:
         text:
           multiline: false
@@ -385,6 +400,7 @@ blueprint:
     hvac_mode_heat:
       name: 'HVAC: нагрев'
       default: heat
+      description: Режим для нагрева.
       selector:
         text:
           multiline: false
@@ -392,6 +408,7 @@ blueprint:
     hvac_mode_cool:
       name: 'HVAC: охлаждение'
       default: cool
+      description: Режим для охлаждения.
       selector:
         text:
           multiline: false
@@ -399,6 +416,7 @@ blueprint:
     hvac_mode_dry:
       name: 'HVAC: осушение'
       default: dry
+      description: Режим для осушения.
       selector:
         text:
           multiline: false
