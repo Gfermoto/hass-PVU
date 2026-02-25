@@ -1,523 +1,598 @@
 blueprint:
-  name: "ПВУ Turkov: температура и качество воздуха"
-  description: |
-    Универсальная автоматика ПВУ Turkov для Home Assistant.
+  name: 'ПВУ Turkov: температура и качество воздуха'
+  description: 'Универсальная автоматика ПВУ Turkov для Home Assistant.
+
     Обязательные датчики: температура и влажность в помещении.
-    Остальные датчики (внутренние и наружные CO2/PM2.5/VOC/NO) опциональны в любой комбинации.
-    Логика: внутренние датчики приоритетнее наружных; наружные используются как корректирующий фактор.
+
+    Остальные датчики (внутренние и наружные CO2/PM2.5/VOC/NO) опциональны в любой
+    комбинации.
+
+    Логика: внутренние датчики приоритетнее наружных; наружные используются как корректирующий
+    фактор.
+
     Реализованы гистерезис, возврат к базовому режиму и защита от unavailable.
+
+    '
   domain: automation
   input:
-    # --- Устройство и обязательные датчики ---
     turkov_climate:
-      name: "ПВУ Turkov (climate)"
+      name: ПВУ Turkov (climate)
       selector:
         entity:
-          domain: climate
-
+          domain:
+          - climate
+          multiple: false
+          reorder: false
     temp_indoor:
-      name: "Температура в помещении"
+      name: Температура в помещении
       selector:
         entity:
-          domain: sensor
-          device_class: temperature
-
+          domain:
+          - sensor
+          device_class:
+          - temperature
+          multiple: false
+          reorder: false
     humidity_indoor:
-      name: "Влажность в помещении"
+      name: Влажность в помещении
       selector:
         entity:
-          domain: sensor
-          device_class: humidity
-
-    # --- Опциональные датчики (внутри/снаружи) ---
+          domain:
+          - sensor
+          device_class:
+          - humidity
+          multiple: false
+          reorder: false
     temp_outdoor:
-      name: "Температура снаружи"
+      name: Температура снаружи
       default: []
       selector:
         entity:
-          domain: sensor
-          device_class: temperature
-
+          domain:
+          - sensor
+          device_class:
+          - temperature
+          multiple: false
+          reorder: false
     co2_sensor:
-      name: "CO2 в помещении"
+      name: CO2 в помещении
       default: []
       selector:
         entity:
-          domain: sensor
-          device_class: carbon_dioxide
-
+          domain:
+          - sensor
+          device_class:
+          - carbon_dioxide
+          multiple: false
+          reorder: false
     pm25_sensor:
-      name: "PM2.5 в помещении"
+      name: PM2.5 в помещении
       default: []
       selector:
         entity:
-          domain: sensor
-          device_class: pm25
-
+          domain:
+          - sensor
+          device_class:
+          - pm25
+          multiple: false
+          reorder: false
     voc_sensor:
-      name: "VOC в помещении"
+      name: VOC в помещении
       default: []
       selector:
         entity:
-          domain: sensor
-
+          domain:
+          - sensor
+          multiple: false
+          reorder: false
     no_sensor:
-      name: "NOx в помещении"
+      name: NOx в помещении
       default: []
       selector:
         entity:
-          domain: sensor
-
+          domain:
+          - sensor
+          multiple: false
+          reorder: false
     co2_outdoor_sensor:
-      name: "CO2 снаружи"
+      name: CO2 снаружи
       default: []
       selector:
         entity:
-          domain: sensor
-          device_class: carbon_dioxide
-
+          domain:
+          - sensor
+          device_class:
+          - carbon_dioxide
+          multiple: false
+          reorder: false
     pm25_outdoor_sensor:
-      name: "PM2.5 снаружи"
+      name: PM2.5 снаружи
       default: []
       selector:
         entity:
-          domain: sensor
-          device_class: pm25
-
+          domain:
+          - sensor
+          device_class:
+          - pm25
+          multiple: false
+          reorder: false
     voc_outdoor_sensor:
-      name: "VOC снаружи"
+      name: VOC снаружи
       default: []
       selector:
         entity:
-          domain: sensor
-
+          domain:
+          - sensor
+          multiple: false
+          reorder: false
     no_outdoor_sensor:
-      name: "NOx снаружи"
+      name: NOx снаружи
       default: []
       selector:
         entity:
-          domain: sensor
-
+          domain:
+          - sensor
+          multiple: false
+          reorder: false
     presence_home:
-      name: "Присутствие дома"
+      name: Источник присутствия (опционально)
       default: []
       selector:
         entity:
-          domain: binary_sensor
-
-    # --- Расписание ---
+          domain:
+          - binary_sensor
+          - person
+          - group
+          - alarm_control_panel
+          multiple: false
+          reorder: false
+    presence_mode:
+      name: Логика присутствия
+      description: Как интерпретировать состояние выбранной сущности присутствия.
+      default: auto
+      selector:
+        select:
+          options:
+          - label: Авто (рекомендуется)
+            value: auto
+          - label: Binary Sensor (off = нет дома)
+            value: binary_sensor
+          - label: Person/Group (not_home = нет дома)
+            value: person_group
+          - label: Alarm (disarmed = дома, иначе нет дома)
+            value: alarm
+          - label: Пользовательское состояние (см. поле ниже)
+            value: custom
+    presence_away_state:
+      name: Пользовательское состояние "нет дома"
+      description: Используется только если выбран режим "Пользовательское состояние".
+      default: not_home
+      selector:
+        text:
+          multiline: false
+          multiple: false
     schedule_day_start:
-      name: "День: начало"
-      default: "07:00:00"
+      name: 'День: начало'
+      default: 07:00:00
       selector:
-        time:
-
+        time: {}
     schedule_night_start:
-      name: "Ночь: начало"
-      default: "23:00:00"
+      name: 'Ночь: начало'
+      default: '23:00:00'
       selector:
-        time:
-
-    # --- Целевые температуры и гистерезис ---
+        time: {}
     temp_day:
-      name: "Целевая температура днем (°C)"
+      name: Целевая температура днем (°C)
       default: 22
       selector:
         number:
-          min: 10
-          max: 30
+          min: 10.0
+          max: 30.0
           step: 0.5
           mode: box
-
     temp_night:
-      name: "Целевая температура ночью (°C)"
+      name: Целевая температура ночью (°C)
       default: 19
       selector:
         number:
-          min: 10
-          max: 30
+          min: 10.0
+          max: 30.0
           step: 0.5
           mode: box
-
     temp_away:
-      name: "Целевая температура в отсутствии (°C)"
+      name: Целевая температура в отсутствии (°C)
       default: 17
       selector:
         number:
-          min: 10
-          max: 30
+          min: 10.0
+          max: 30.0
           step: 0.5
           mode: box
-
     temp_hysteresis_on:
-      name: "Гистерезис: включение (°C)"
+      name: 'Гистерезис: включение (°C)'
       default: 1.0
       selector:
         number:
           min: 0.3
-          max: 3
+          max: 3.0
           step: 0.1
           mode: box
-
     temp_hysteresis_off:
-      name: "Гистерезис: возврат в норму (°C)"
+      name: 'Гистерезис: возврат в норму (°C)'
       default: 0.5
       selector:
         number:
           min: 0.2
-          max: 2
+          max: 2.0
           step: 0.1
           mode: box
-
     outdoor_cool_min:
-      name: "Охлаждение: мин. t снаружи (°C)"
+      name: 'Охлаждение: мин. t снаружи (°C)'
       default: 18
       selector:
         number:
-          min: -20
-          max: 35
-          step: 1
+          min: -20.0
+          max: 35.0
+          step: 1.0
           mode: box
-
     humidity_high:
-      name: "Влажность: включить dry (%)"
+      name: 'Влажность: включить dry (%)'
       default: 70
       selector:
         number:
-          min: 30
-          max: 95
-          step: 1
+          min: 30.0
+          max: 95.0
+          step: 1.0
           mode: box
-
     humidity_low:
-      name: "Влажность: выключить dry (%)"
+      name: 'Влажность: выключить dry (%)'
       default: 60
       selector:
         number:
-          min: 20
-          max: 90
-          step: 1
+          min: 20.0
+          max: 90.0
+          step: 1.0
           mode: box
-
     co2_high:
-      name: "CO2: порог boost (ppm)"
+      name: 'CO2: порог boost (ppm)'
       default: 1000
       selector:
         number:
-          min: 400
-          max: 2500
-          step: 10
+          min: 400.0
+          max: 2500.0
+          step: 10.0
           mode: box
-
     co2_low:
-      name: "CO2: порог возврата (ppm)"
+      name: 'CO2: порог возврата (ppm)'
       default: 750
       selector:
         number:
-          min: 350
-          max: 2400
-          step: 10
+          min: 350.0
+          max: 2400.0
+          step: 10.0
           mode: box
-
     co2_outdoor_block:
-      name: "CO2 снаружи: блок boost (ppm)"
+      name: 'CO2 снаружи: блок boost (ppm)'
       default: 1200
       selector:
         number:
-          min: 400
-          max: 5000
-          step: 10
+          min: 400.0
+          max: 5000.0
+          step: 10.0
           mode: box
-
     pm25_high:
-      name: "PM2.5: порог boost (µg/m³)"
+      name: 'PM2.5: порог boost (µg/m³)'
       default: 50
       selector:
         number:
-          min: 5
-          max: 300
-          step: 1
+          min: 5.0
+          max: 300.0
+          step: 1.0
           mode: box
-
     pm25_low:
-      name: "PM2.5: порог возврата (µg/m³)"
+      name: 'PM2.5: порог возврата (µg/m³)'
       default: 25
       selector:
         number:
-          min: 3
-          max: 250
-          step: 1
+          min: 3.0
+          max: 250.0
+          step: 1.0
           mode: box
-
     pm25_outdoor_block:
-      name: "PM2.5 снаружи: блок boost (µg/m³)"
+      name: 'PM2.5 снаружи: блок boost (µg/m³)'
       default: 100
       selector:
         number:
-          min: 10
-          max: 400
-          step: 1
+          min: 10.0
+          max: 400.0
+          step: 1.0
           mode: box
-
     voc_high:
-      name: "VOC: порог boost (ед. датчика)"
+      name: 'VOC: порог boost (ед. датчика)'
       default: 400
       selector:
         number:
-          min: 10
-          max: 3000
-          step: 1
+          min: 10.0
+          max: 3000.0
+          step: 1.0
           mode: box
-
     voc_low:
-      name: "VOC: порог возврата (ед. датчика)"
+      name: 'VOC: порог возврата (ед. датчика)'
       default: 300
       selector:
         number:
-          min: 5
-          max: 2500
-          step: 1
+          min: 5.0
+          max: 2500.0
+          step: 1.0
           mode: box
-
     voc_outdoor_block:
-      name: "VOC снаружи: блок boost (ед. датчика)"
+      name: 'VOC снаружи: блок boost (ед. датчика)'
       default: 500
       selector:
         number:
-          min: 10
-          max: 5000
-          step: 1
+          min: 10.0
+          max: 5000.0
+          step: 1.0
           mode: box
-
     no_high:
-      name: "NOx: порог boost"
+      name: 'NOx: порог boost'
       default: 20
       selector:
         number:
-          min: 1
-          max: 500
-          step: 1
+          min: 1.0
+          max: 500.0
+          step: 1.0
           mode: box
-
     no_low:
-      name: "NOx: порог возврата"
+      name: 'NOx: порог возврата'
       default: 10
       selector:
         number:
-          min: 1
-          max: 500
-          step: 1
+          min: 1.0
+          max: 500.0
+          step: 1.0
           mode: box
-
     no_outdoor_block:
-      name: "NOx снаружи: блок boost"
+      name: 'NOx снаружи: блок boost'
       default: 20
       selector:
         number:
-          min: 1
-          max: 500
-          step: 1
+          min: 1.0
+          max: 500.0
+          step: 1.0
           mode: box
-
-    # --- Режимы устройства (подстройка под конкретную модель) ---
     fan_mode_normal:
-      name: "Вентилятор: норма"
-      default: "low"
+      name: 'Вентилятор: норма'
+      default: low
       selector:
         text:
-
+          multiline: false
+          multiple: false
     fan_mode_boost:
-      name: "Вентилятор: boost"
-      default: "high"
+      name: 'Вентилятор: boost'
+      default: high
       selector:
         text:
-
+          multiline: false
+          multiple: false
     hvac_mode_normal:
-      name: "HVAC: норма"
-      default: "auto"
+      name: 'HVAC: норма'
+      default: auto
       selector:
         text:
-
+          multiline: false
+          multiple: false
     hvac_mode_heat:
-      name: "HVAC: нагрев"
-      default: "heat"
+      name: 'HVAC: нагрев'
+      default: heat
       selector:
         text:
-
+          multiline: false
+          multiple: false
     hvac_mode_cool:
-      name: "HVAC: охлаждение"
-      default: "cool"
+      name: 'HVAC: охлаждение'
+      default: cool
       selector:
         text:
-
+          multiline: false
+          multiple: false
     hvac_mode_dry:
-      name: "HVAC: осушение"
-      default: "dry"
+      name: 'HVAC: осушение'
+      default: dry
       selector:
         text:
-
+          multiline: false
+          multiple: false
+  source_url: https://github.com/Gfermoto/hass-PVU/blob/main/pvu.yaml
 trigger:
-  - platform: time_pattern
-    minutes: "/2"
-  - platform: state
-    entity_id: !input temp_indoor
-  - platform: state
-    entity_id: !input humidity_indoor
-
+- platform: time_pattern
+  minutes: /2
+- platform: state
+  entity_id: !input temp_indoor
+- platform: state
+  entity_id: !input humidity_indoor
 action:
-  - variables:
-      # Время и режим дня/ночи (поддержка интервалов через полночь)
-      now_hms: "{{ now().strftime('%H:%M:%S') }}"
-      day_start: "{{ (schedule_day_start + ':00')[:8] if (schedule_day_start | string | length) == 5 else (schedule_day_start | string)[:8] }}"
-      night_start: "{{ (schedule_night_start + ':00')[:8] if (schedule_night_start | string | length) == 5 else (schedule_night_start | string)[:8] }}"
-      is_day: >
-        {% set ds = day_start %}
-        {% set ns = night_start %}
-        {% set t = now_hms %}
-        {% if ds <= ns %}
-          {{ ds <= t and t < ns }}
+- variables:
+    turkov_climate: !input turkov_climate
+    temp_indoor: !input temp_indoor
+    humidity_indoor: !input humidity_indoor
+    temp_outdoor: !input temp_outdoor
+    co2_sensor: !input co2_sensor
+    pm25_sensor: !input pm25_sensor
+    voc_sensor: !input voc_sensor
+    no_sensor: !input no_sensor
+    co2_outdoor_sensor: !input co2_outdoor_sensor
+    pm25_outdoor_sensor: !input pm25_outdoor_sensor
+    voc_outdoor_sensor: !input voc_outdoor_sensor
+    no_outdoor_sensor: !input no_outdoor_sensor
+    presence_home: !input presence_home
+    schedule_day_start: !input schedule_day_start
+    schedule_night_start: !input schedule_night_start
+    temp_day: !input temp_day
+    temp_night: !input temp_night
+    temp_away: !input temp_away
+    temp_hysteresis_on: !input temp_hysteresis_on
+    temp_hysteresis_off: !input temp_hysteresis_off
+    outdoor_cool_min: !input outdoor_cool_min
+    humidity_high: !input humidity_high
+    humidity_low: !input humidity_low
+    co2_high: !input co2_high
+    co2_low: !input co2_low
+    co2_outdoor_block: !input co2_outdoor_block
+    pm25_high: !input pm25_high
+    pm25_low: !input pm25_low
+    pm25_outdoor_block: !input pm25_outdoor_block
+    voc_high: !input voc_high
+    voc_low: !input voc_low
+    voc_outdoor_block: !input voc_outdoor_block
+    no_high: !input no_high
+    no_low: !input no_low
+    no_outdoor_block: !input no_outdoor_block
+    fan_mode_normal: !input fan_mode_normal
+    fan_mode_boost: !input fan_mode_boost
+    hvac_mode_normal: !input hvac_mode_normal
+    hvac_mode_heat: !input hvac_mode_heat
+    hvac_mode_cool: !input hvac_mode_cool
+    hvac_mode_dry: !input hvac_mode_dry
+    presence_mode: !input presence_mode
+    presence_away_state: !input presence_away_state
+- variables:
+    now_hms: '{{ now().strftime(''%H:%M:%S'') }}'
+    day_start: '{{ (schedule_day_start + '':00'')[:8] if (schedule_day_start | string
+      | length) == 5 else (schedule_day_start | string)[:8] }}'
+    night_start: '{{ (schedule_night_start + '':00'')[:8] if (schedule_night_start
+      | string | length) == 5 else (schedule_night_start | string)[:8] }}'
+    is_day: "{% set ds = day_start %} {% set ns = night_start %} {% set t = now_hms
+      %} {% if ds <= ns %}\n  {{ ds <= t and t < ns }}\n{% else %}\n  {{ t >= ds or
+      t < ns }}\n{% endif %}\n"
+    presence_entity: '{{ presence_home | default('''', true) | string }}'
+    presence_state: '{{ states(presence_entity) if ''.'' in presence_entity else '''' }}'
+    is_away: >
+      {% if '.' not in presence_entity %}
+        false
+      {% elif presence_mode == 'binary_sensor' %}
+        {{ is_state(presence_entity, 'off') }}
+      {% elif presence_mode == 'person_group' %}
+        {{ is_state(presence_entity, 'not_home') }}
+      {% elif presence_mode == 'alarm' %}
+        {{ is_state(presence_entity, 'armed_away') or is_state(presence_entity, 'armed_vacation') or is_state(presence_entity, 'triggered') }}
+      {% elif presence_mode == 'custom' %}
+        {% set away_state = (presence_away_state | string | trim) %}
+        {{ away_state != '' and presence_state == away_state }}
+      {% else %}
+        {% if presence_state in ['not_home', 'off', 'armed_away', 'armed_vacation', 'triggered'] %}
+          true
+        {% elif presence_state in ['home', 'on', 'disarmed', 'armed_home', 'armed_night', 'arming', 'pending'] %}
+          false
         {% else %}
-          {{ t >= ds or t < ns }}
+          false
         {% endif %}
-
-      # Наличие дома
-      presence_entity: "{{ presence_home | default('', true) | string }}"
-      is_away: "{{ '.' in presence_entity and is_state(presence_entity, 'off') }}"
-
-      # Целевая температура с учетом расписания и отсутствия
-      target_temp: >
-        {% if is_away %}
-          {{ temp_away | float }}
-        {% elif is_day %}
-          {{ temp_day | float }}
-        {% else %}
-          {{ temp_night | float }}
-        {% endif %}
-
-      # Температура
-      temp_in_entity: "{{ temp_indoor | string }}"
-      temp_in_valid: "{{ states(temp_in_entity) not in ['unknown', 'unavailable', 'none', 'None', ''] }}"
-      temp_in: "{{ states(temp_in_entity) | float(0) }}"
-
-      temp_out_entity: "{{ temp_outdoor | default('', true) | string }}"
-      temp_out_valid: "{{ '.' in temp_out_entity and states(temp_out_entity) not in ['unknown', 'unavailable', 'none', 'None', ''] }}"
-      temp_out: "{{ states(temp_out_entity) | float(0) }}"
-      cool_allowed: "{{ (not temp_out_valid) or (temp_out > outdoor_cool_min | float) }}"
-
-      # Влажность
-      humidity_entity: "{{ humidity_indoor | string }}"
-      humidity_active: "{{ states(humidity_entity) not in ['unknown', 'unavailable', 'none', 'None', ''] }}"
-      humidity_value: "{{ states(humidity_entity) | float(0) }}"
-      humidity_boost: "{{ humidity_active and humidity_value >= (humidity_high | float) }}"
-      humidity_clear: "{{ (not humidity_active) or humidity_value <= (humidity_low | float) }}"
-
-      # CO2
-      co2_entity: "{{ co2_sensor | default('', true) | string }}"
-      co2_active: "{{ '.' in co2_entity and states(co2_entity) not in ['unknown', 'unavailable', 'none', 'None', ''] }}"
-      co2_value: "{{ states(co2_entity) | float(0) }}"
-      co2_boost: "{{ co2_active and co2_value >= (co2_high | float) }}"
-      co2_clear: "{{ (not co2_active) or co2_value <= (co2_low | float) }}"
-
-      # PM2.5 indoor
-      pm25_entity: "{{ pm25_sensor | default('', true) | string }}"
-      pm25_active: "{{ '.' in pm25_entity and states(pm25_entity) not in ['unknown', 'unavailable', 'none', 'None', ''] }}"
-      pm25_value: "{{ states(pm25_entity) | float(0) }}"
-      pm25_boost: "{{ pm25_active and pm25_value >= (pm25_high | float) }}"
-      pm25_clear: "{{ (not pm25_active) or pm25_value <= (pm25_low | float) }}"
-
-      # PM2.5 outdoor (ограничение boost)
-      pm25_outdoor_entity: "{{ pm25_outdoor_sensor | default('', true) | string }}"
-      pm25_outdoor_active: "{{ '.' in pm25_outdoor_entity and states(pm25_outdoor_entity) not in ['unknown', 'unavailable', 'none', 'None', ''] }}"
-      pm25_outdoor_value: "{{ states(pm25_outdoor_entity) | float(0) }}"
-      pm25_outdoor_bad: "{{ pm25_outdoor_active and pm25_outdoor_value >= (pm25_outdoor_block | float) }}"
-
-      # CO2 outdoor (ограничение boost)
-      co2_outdoor_entity: "{{ co2_outdoor_sensor | default('', true) | string }}"
-      co2_outdoor_active: "{{ '.' in co2_outdoor_entity and states(co2_outdoor_entity) not in ['unknown', 'unavailable', 'none', 'None', ''] }}"
-      co2_outdoor_value: "{{ states(co2_outdoor_entity) | float(0) }}"
-      co2_outdoor_bad: "{{ co2_outdoor_active and co2_outdoor_value >= (co2_outdoor_block | float) }}"
-
-      # VOC
-      voc_entity: "{{ voc_sensor | default('', true) | string }}"
-      voc_active: "{{ '.' in voc_entity and states(voc_entity) not in ['unknown', 'unavailable', 'none', 'None', ''] }}"
-      voc_value: "{{ states(voc_entity) | float(0) }}"
-      voc_boost: "{{ voc_active and voc_value >= (voc_high | float) }}"
-      voc_clear: "{{ (not voc_active) or voc_value <= (voc_low | float) }}"
-
-      # VOC outdoor (ограничение boost)
-      voc_outdoor_entity: "{{ voc_outdoor_sensor | default('', true) | string }}"
-      voc_outdoor_active: "{{ '.' in voc_outdoor_entity and states(voc_outdoor_entity) not in ['unknown', 'unavailable', 'none', 'None', ''] }}"
-      voc_outdoor_value: "{{ states(voc_outdoor_entity) | float(0) }}"
-      voc_outdoor_bad: "{{ voc_outdoor_active and voc_outdoor_value >= (voc_outdoor_block | float) }}"
-
-      # NO
-      no_entity: "{{ no_sensor | default('', true) | string }}"
-      no_active: "{{ '.' in no_entity and states(no_entity) not in ['unknown', 'unavailable', 'none', 'None', ''] }}"
-      no_value: "{{ states(no_entity) | float(0) }}"
-      no_boost: "{{ no_active and no_value >= (no_high | float) }}"
-      no_clear: "{{ (not no_active) or no_value <= (no_low | float) }}"
-
-      # NO outdoor (ограничение boost)
-      no_outdoor_entity: "{{ no_outdoor_sensor | default('', true) | string }}"
-      no_outdoor_active: "{{ '.' in no_outdoor_entity and states(no_outdoor_entity) not in ['unknown', 'unavailable', 'none', 'None', ''] }}"
-      no_outdoor_value: "{{ states(no_outdoor_entity) | float(0) }}"
-      no_outdoor_bad: "{{ no_outdoor_active and no_outdoor_value >= (no_outdoor_block | float) }}"
-
-      # Сводная логика качества воздуха
-      any_air_boost: "{{ co2_boost or pm25_boost or voc_boost or no_boost }}"
-      all_air_clear: "{{ co2_clear and pm25_clear and voc_clear and no_clear }}"
-      outdoor_air_bad: "{{ pm25_outdoor_bad or co2_outdoor_bad or voc_outdoor_bad or no_outdoor_bad }}"
-
-      # Текущие режимы устройства
-      current_hvac_mode: "{{ states(turkov_climate) | string }}"
-      current_fan_mode: "{{ state_attr(turkov_climate, 'fan_mode') | default('', true) | string }}"
-
-      # Желаемый HVAC (приоритет: влажность -> температура -> норма)
-      desired_hvac_mode: >
-        {% if humidity_boost %}
-          {{ hvac_mode_dry | string }}
-        {% elif temp_in_valid and temp_in > (target_temp | float + temp_hysteresis_on | float) and cool_allowed %}
-          {{ hvac_mode_cool | string }}
-        {% elif temp_in_valid and temp_in < (target_temp | float - temp_hysteresis_on | float) %}
-          {{ hvac_mode_heat | string }}
-        {% elif humidity_clear and temp_in_valid and temp_in >= (target_temp | float - temp_hysteresis_off | float) and temp_in <= (target_temp | float + temp_hysteresis_off | float) %}
-          {{ hvac_mode_normal | string }}
-        {% else %}
-          {{ '' }}
-        {% endif %}
-
-      # Желаемый fan mode (с учетом блокировки boost при грязном наружном воздухе)
-      desired_fan_mode: >
-        {% if any_air_boost or humidity_boost %}
-          {{ fan_mode_boost | string }}
-        {% elif outdoor_air_bad %}
-          {{ fan_mode_normal | string }}
-        {% elif all_air_clear and humidity_clear %}
-          {{ fan_mode_normal | string }}
-        {% else %}
-          {{ '' }}
-        {% endif %}
-
-  # Шаг 1: применяем HVAC отдельно от fan_mode, чтобы не терять ветки choose
-  - choose:
-      - conditions: "{{ desired_hvac_mode | length > 0 and desired_hvac_mode != current_hvac_mode }}"
-        sequence:
-          - service: climate.set_hvac_mode
-            target:
-              entity_id: !input turkov_climate
-            data:
-              hvac_mode: "{{ desired_hvac_mode }}"
-    default: []
-
-  # Шаг 2: применяем fan_mode отдельно
-  - choose:
-      - conditions: "{{ desired_fan_mode | length > 0 and desired_fan_mode != current_fan_mode }}"
-        sequence:
-          - service: climate.set_fan_mode
-            target:
-              entity_id: !input turkov_climate
-            data:
-              fan_mode: "{{ desired_fan_mode }}"
-    default: []
-
+      {% endif %}
+    target_temp: "{% if is_away %}\n  {{ temp_away | float }}\n{% elif is_day %}\n
+      \ {{ temp_day | float }}\n{% else %}\n  {{ temp_night | float }}\n{% endif %}\n"
+    temp_in_entity: '{{ temp_indoor | string }}'
+    temp_in_valid: '{{ states(temp_in_entity) not in [''unknown'', ''unavailable'',
+      ''none'', ''None'', ''''] }}'
+    temp_in: '{{ states(temp_in_entity) | float(0) }}'
+    temp_out_entity: '{{ temp_outdoor | default('''', true) | string }}'
+    temp_out_valid: '{{ ''.'' in temp_out_entity and states(temp_out_entity) not in
+      [''unknown'', ''unavailable'', ''none'', ''None'', ''''] }}'
+    temp_out: '{{ states(temp_out_entity) | float(0) }}'
+    cool_allowed: '{{ (not temp_out_valid) or (temp_out > outdoor_cool_min | float)
+      }}'
+    humidity_entity: '{{ humidity_indoor | string }}'
+    humidity_active: '{{ states(humidity_entity) not in [''unknown'', ''unavailable'',
+      ''none'', ''None'', ''''] }}'
+    humidity_value: '{{ states(humidity_entity) | float(0) }}'
+    humidity_boost: '{{ humidity_active and humidity_value >= (humidity_high | float)
+      }}'
+    humidity_clear: '{{ (not humidity_active) or humidity_value <= (humidity_low |
+      float) }}'
+    co2_entity: '{{ co2_sensor | default('''', true) | string }}'
+    co2_active: '{{ ''.'' in co2_entity and states(co2_entity) not in [''unknown'',
+      ''unavailable'', ''none'', ''None'', ''''] }}'
+    co2_value: '{{ states(co2_entity) | float(0) }}'
+    co2_boost: '{{ co2_active and co2_value >= (co2_high | float) }}'
+    co2_clear: '{{ (not co2_active) or co2_value <= (co2_low | float) }}'
+    pm25_entity: '{{ pm25_sensor | default('''', true) | string }}'
+    pm25_active: '{{ ''.'' in pm25_entity and states(pm25_entity) not in [''unknown'',
+      ''unavailable'', ''none'', ''None'', ''''] }}'
+    pm25_value: '{{ states(pm25_entity) | float(0) }}'
+    pm25_boost: '{{ pm25_active and pm25_value >= (pm25_high | float) }}'
+    pm25_clear: '{{ (not pm25_active) or pm25_value <= (pm25_low | float) }}'
+    pm25_outdoor_entity: '{{ pm25_outdoor_sensor | default('''', true) | string }}'
+    pm25_outdoor_active: '{{ ''.'' in pm25_outdoor_entity and states(pm25_outdoor_entity)
+      not in [''unknown'', ''unavailable'', ''none'', ''None'', ''''] }}'
+    pm25_outdoor_value: '{{ states(pm25_outdoor_entity) | float(0) }}'
+    pm25_outdoor_bad: '{{ pm25_outdoor_active and pm25_outdoor_value >= (pm25_outdoor_block
+      | float) }}'
+    co2_outdoor_entity: '{{ co2_outdoor_sensor | default('''', true) | string }}'
+    co2_outdoor_active: '{{ ''.'' in co2_outdoor_entity and states(co2_outdoor_entity)
+      not in [''unknown'', ''unavailable'', ''none'', ''None'', ''''] }}'
+    co2_outdoor_value: '{{ states(co2_outdoor_entity) | float(0) }}'
+    co2_outdoor_bad: '{{ co2_outdoor_active and co2_outdoor_value >= (co2_outdoor_block
+      | float) }}'
+    voc_entity: '{{ voc_sensor | default('''', true) | string }}'
+    voc_active: '{{ ''.'' in voc_entity and states(voc_entity) not in [''unknown'',
+      ''unavailable'', ''none'', ''None'', ''''] }}'
+    voc_value: '{{ states(voc_entity) | float(0) }}'
+    voc_boost: '{{ voc_active and voc_value >= (voc_high | float) }}'
+    voc_clear: '{{ (not voc_active) or voc_value <= (voc_low | float) }}'
+    voc_outdoor_entity: '{{ voc_outdoor_sensor | default('''', true) | string }}'
+    voc_outdoor_active: '{{ ''.'' in voc_outdoor_entity and states(voc_outdoor_entity)
+      not in [''unknown'', ''unavailable'', ''none'', ''None'', ''''] }}'
+    voc_outdoor_value: '{{ states(voc_outdoor_entity) | float(0) }}'
+    voc_outdoor_bad: '{{ voc_outdoor_active and voc_outdoor_value >= (voc_outdoor_block
+      | float) }}'
+    no_entity: '{{ no_sensor | default('''', true) | string }}'
+    no_active: '{{ ''.'' in no_entity and states(no_entity) not in [''unknown'', ''unavailable'',
+      ''none'', ''None'', ''''] }}'
+    no_value: '{{ states(no_entity) | float(0) }}'
+    no_boost: '{{ no_active and no_value >= (no_high | float) }}'
+    no_clear: '{{ (not no_active) or no_value <= (no_low | float) }}'
+    no_outdoor_entity: '{{ no_outdoor_sensor | default('''', true) | string }}'
+    no_outdoor_active: '{{ ''.'' in no_outdoor_entity and states(no_outdoor_entity)
+      not in [''unknown'', ''unavailable'', ''none'', ''None'', ''''] }}'
+    no_outdoor_value: '{{ states(no_outdoor_entity) | float(0) }}'
+    no_outdoor_bad: '{{ no_outdoor_active and no_outdoor_value >= (no_outdoor_block
+      | float) }}'
+    any_air_boost: '{{ co2_boost or pm25_boost or voc_boost or no_boost }}'
+    all_air_clear: '{{ co2_clear and pm25_clear and voc_clear and no_clear }}'
+    outdoor_air_bad: '{{ pm25_outdoor_bad or co2_outdoor_bad or voc_outdoor_bad or
+      no_outdoor_bad }}'
+    current_hvac_mode: '{{ states(turkov_climate) | string }}'
+    current_fan_mode: '{{ state_attr(turkov_climate, ''fan_mode'') | default('''',
+      true) | string }}'
+    desired_hvac_mode: "{% if humidity_boost %}\n  {{ hvac_mode_dry | string }}\n{%
+      elif temp_in_valid and temp_in > (target_temp | float + temp_hysteresis_on |
+      float) and cool_allowed %}\n  {{ hvac_mode_cool | string }}\n{% elif temp_in_valid
+      and temp_in < (target_temp | float - temp_hysteresis_on | float) %}\n  {{ hvac_mode_heat
+      | string }}\n{% elif humidity_clear and temp_in_valid and temp_in >= (target_temp
+      | float - temp_hysteresis_off | float) and temp_in <= (target_temp | float +
+      temp_hysteresis_off | float) %}\n  {{ hvac_mode_normal | string }}\n{% else
+      %}\n  {{ '' }}\n{% endif %}\n"
+    desired_fan_mode: "{% if any_air_boost or humidity_boost %}\n  {{ fan_mode_boost
+      | string }}\n{% elif outdoor_air_bad %}\n  {{ fan_mode_normal | string }}\n{%
+      elif all_air_clear and humidity_clear %}\n  {{ fan_mode_normal | string }}\n{%
+      else %}\n  {{ '' }}\n{% endif %}\n"
+- choose:
+  - conditions: '{{ desired_hvac_mode | length > 0 and desired_hvac_mode != current_hvac_mode
+      }}'
+    sequence:
+    - service: climate.set_hvac_mode
+      target:
+        entity_id: !input turkov_climate
+      data:
+        hvac_mode: '{{ desired_hvac_mode }}'
+  default: []
+- choose:
+  - conditions: '{{ desired_fan_mode | length > 0 and desired_fan_mode != current_fan_mode
+      }}'
+    sequence:
+    - service: climate.set_fan_mode
+      target:
+        entity_id: !input turkov_climate
+      data:
+        fan_mode: '{{ desired_fan_mode }}'
+  default: []
 mode: single
