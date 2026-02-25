@@ -256,6 +256,16 @@ blueprint:
           max: 35.0
           step: 1.0
           mode: box
+    outdoor_vent_min:
+      name: 'Вентиляция: мин. t снаружи (антизаморозка, °C)'
+      default: 0
+      description: Если на улице ниже этого порога, режим HVAC "вентиляция/fan_only" не включается (защита от переохлаждения установки).
+      selector:
+        number:
+          min: -35.0
+          max: 20.0
+          step: 1.0
+          mode: box
     humidity_high:
       name: 'Влажность: включить boost (%)'
       default: 70
@@ -514,6 +524,7 @@ action:
     temp_hysteresis_on: !input temp_hysteresis_on
     temp_hysteresis_off: !input temp_hysteresis_off
     outdoor_cool_min: !input outdoor_cool_min
+    outdoor_vent_min: !input outdoor_vent_min
     humidity_high: !input humidity_high
     humidity_low: !input humidity_low
     co2_high: !input co2_high
@@ -591,6 +602,8 @@ action:
       [''unknown'', ''unavailable'', ''none'', ''None'', ''''] }}'
     temp_out: '{{ states(temp_out_entity) | float(0) }}'
     cool_allowed: '{{ (not temp_out_valid) or (temp_out > outdoor_cool_min | float)
+      }}'
+    vent_allowed: '{{ (not temp_out_valid) or (temp_out > outdoor_vent_min | float)
       }}'
     # === ВЛАЖНОСТЬ ===
     humidity_entity: '{{ humidity_indoor | string }}'
@@ -670,7 +683,11 @@ action:
       and temp_in < (target_temp | float - temp_hysteresis_on | float) %}\n  {{ hvac_mode_heat
       | string }}\n{% elif humidity_clear and temp_in_valid and temp_in >= (target_temp
       | float - temp_hysteresis_off | float) and temp_in <= (target_temp | float +
-      temp_hysteresis_off | float) %}\n  {{ hvac_mode_ventilation | string }}\n{% else
+      temp_hysteresis_off | float) and vent_allowed %}\n  {{ hvac_mode_ventilation
+      | string }}\n{% elif humidity_clear and temp_in_valid and temp_in >= (target_temp
+      | float - temp_hysteresis_off | float) and temp_in <= (target_temp | float +
+      temp_hysteresis_off | float) and (not vent_allowed) %}\n  {{ hvac_mode_heat
+      | string }}\n{% else
       %}\n  {{ '' }}\n{% endif %}\n"
     # Логика вентилятора (3 ступени):
     # 1) Если никого нет и выбран away=off -> off
