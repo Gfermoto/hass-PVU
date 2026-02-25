@@ -598,7 +598,13 @@ action:
     current_hvac_mode: '{{ states(turkov_climate) | string }}'
     current_fan_mode: '{{ state_attr(turkov_climate, ''fan_mode'') | default('''',
       true) | string }}'
-    desired_hvac_mode: "{% if humidity_boost %}\n  {{ hvac_mode_dry | string }}\n{%
+    supported_hvac_modes: '{{ state_attr(turkov_climate, ''hvac_modes'') | default([],
+      true) }}'
+    supported_fan_modes: '{{ state_attr(turkov_climate, ''fan_modes'') | default([],
+      true) }}'
+    dry_supported: '{{ (hvac_mode_dry | string) in supported_hvac_modes }}'
+    desired_hvac_mode: "{% if humidity_boost and dry_supported %}\n  {{ hvac_mode_dry
+      | string }}\n{%
       elif temp_in_valid and temp_in > (target_temp | float + temp_hysteresis_on |
       float) and cool_allowed %}\n  {{ hvac_mode_cool | string }}\n{% elif temp_in_valid
       and temp_in < (target_temp | float - temp_hysteresis_on | float) %}\n  {{ hvac_mode_heat
@@ -617,6 +623,7 @@ action:
 - choose:
   # Шаг 1: применяем HVAC только если режим действительно меняется.
   - conditions: '{{ desired_hvac_mode | length > 0 and desired_hvac_mode != current_hvac_mode
+      and desired_hvac_mode in supported_hvac_modes
       }}'
     sequence:
     - service: climate.set_hvac_mode
@@ -628,6 +635,7 @@ action:
 - choose:
   # Шаг 2: применяем fan_mode только если режим действительно меняется.
   - conditions: '{{ desired_fan_mode | length > 0 and desired_fan_mode != current_fan_mode
+      and desired_fan_mode in supported_fan_modes
       }}'
     sequence:
     - service: climate.set_fan_mode
