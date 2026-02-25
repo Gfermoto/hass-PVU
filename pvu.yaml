@@ -405,6 +405,7 @@ blueprint:
           multiple: false
   source_url: https://github.com/Gfermoto/hass-PVU/blob/main/pvu.yaml
 trigger:
+# Пересчёт каждые 2 минуты + при изменении обязательных датчиков.
 - platform: time_pattern
   minutes: /2
 - platform: state
@@ -413,6 +414,8 @@ trigger:
   entity_id: !input humidity_indoor
 action:
 - variables:
+    # Вытаскиваем все blueprint input в локальные переменные
+    # (чтобы дальше использовать короткие имена в шаблонах).
     turkov_climate: !input turkov_climate
     temp_indoor: !input temp_indoor
     humidity_indoor: !input humidity_indoor
@@ -457,6 +460,7 @@ action:
     presence_mode: !input presence_mode
     presence_away_state: !input presence_away_state
 - variables:
+    # === ВРЕМЯ / ДЕНЬ-НОЧЬ ===
     now_hms: '{{ now().strftime(''%H:%M:%S'') }}'
     day_start: '{{ (schedule_day_start + '':00'')[:8] if (schedule_day_start | string
       | length) == 5 else (schedule_day_start | string)[:8] }}'
@@ -465,6 +469,13 @@ action:
     is_day: "{% set ds = day_start %} {% set ns = night_start %} {% set t = now_hms
       %} {% if ds <= ns %}\n  {{ ds <= t and t < ns }}\n{% else %}\n  {{ t >= ds or
       t < ns }}\n{% endif %}\n"
+    # === ПРИСУТСТВИЕ ===
+    # presence_mode:
+    # - binary_sensor: off = нет дома
+    # - person_group: not_home = нет дома
+    # - alarm: armed_away/armed_vacation/triggered = нет дома
+    # - custom: состояние presence_away_state = нет дома
+    # - auto: безопасная эвристика по типовым состояниям
     presence_entity: '{{ presence_home | default('''', true) | string }}'
     presence_state: '{{ states(presence_entity) if ''.'' in presence_entity else '''' }}'
     is_away: >
@@ -490,6 +501,7 @@ action:
       {% endif %}
     target_temp: "{% if is_away %}\n  {{ temp_away | float }}\n{% elif is_day %}\n
       \ {{ temp_day | float }}\n{% else %}\n  {{ temp_night | float }}\n{% endif %}\n"
+    # === ТЕМПЕРАТУРА ===
     temp_in_entity: '{{ temp_indoor | string }}'
     temp_in_valid: '{{ states(temp_in_entity) not in [''unknown'', ''unavailable'',
       ''none'', ''None'', ''''] }}'
@@ -500,6 +512,7 @@ action:
     temp_out: '{{ states(temp_out_entity) | float(0) }}'
     cool_allowed: '{{ (not temp_out_valid) or (temp_out > outdoor_cool_min | float)
       }}'
+    # === ВЛАЖНОСТЬ ===
     humidity_entity: '{{ humidity_indoor | string }}'
     humidity_active: '{{ states(humidity_entity) not in [''unknown'', ''unavailable'',
       ''none'', ''None'', ''''] }}'
@@ -508,6 +521,7 @@ action:
       }}'
     humidity_clear: '{{ (not humidity_active) or humidity_value <= (humidity_low |
       float) }}'
+    # === КАЧЕСТВО ВОЗДУХА (ВНУТРИ) ===
     co2_entity: '{{ co2_sensor | default('''', true) | string }}'
     co2_active: '{{ ''.'' in co2_entity and states(co2_entity) not in [''unknown'',
       ''unavailable'', ''none'', ''None'', ''''] }}'
@@ -550,6 +564,8 @@ action:
     no_value: '{{ states(no_entity) | float(0) }}'
     no_boost: '{{ no_active and no_value >= (no_high | float) }}'
     no_clear: '{{ (not no_active) or no_value <= (no_low | float) }}'
+    # === КАЧЕСТВО ВОЗДУХА (СНАРУЖИ) ===
+    # Эти параметры не "включают boost", а ограничивают его.
     no_outdoor_entity: '{{ no_outdoor_sensor | default('''', true) | string }}'
     no_outdoor_active: '{{ ''.'' in no_outdoor_entity and states(no_outdoor_entity)
       not in [''unknown'', ''unavailable'', ''none'', ''None'', ''''] }}'
@@ -560,6 +576,7 @@ action:
     all_air_clear: '{{ co2_clear and pm25_clear and voc_clear and no_clear }}'
     outdoor_air_bad: '{{ pm25_outdoor_bad or co2_outdoor_bad or voc_outdoor_bad or
       no_outdoor_bad }}'
+    # === ТЕКУЩЕЕ СОСТОЯНИЕ ПВУ ===
     current_hvac_mode: '{{ states(turkov_climate) | string }}'
     current_fan_mode: '{{ state_attr(turkov_climate, ''fan_mode'') | default('''',
       true) | string }}'
@@ -571,11 +588,16 @@ action:
       | float - temp_hysteresis_off | float) and temp_in <= (target_temp | float +
       temp_hysteresis_off | float) %}\n  {{ hvac_mode_normal | string }}\n{% else
       %}\n  {{ '' }}\n{% endif %}\n"
+    # Логика вентилятора:
+    # 1) если внутри плохо (any_air_boost или humidity_boost) -> boost
+    # 2) если снаружи плохо -> normal (ограничение)
+    # 3) если всё в норме -> normal
     desired_fan_mode: "{% if any_air_boost or humidity_boost %}\n  {{ fan_mode_boost
       | string }}\n{% elif outdoor_air_bad %}\n  {{ fan_mode_normal | string }}\n{%
       elif all_air_clear and humidity_clear %}\n  {{ fan_mode_normal | string }}\n{%
       else %}\n  {{ '' }}\n{% endif %}\n"
 - choose:
+  # Шаг 1: применяем HVAC только если режим действительно меняется.
   - conditions: '{{ desired_hvac_mode | length > 0 and desired_hvac_mode != current_hvac_mode
       }}'
     sequence:
@@ -586,6 +608,7 @@ action:
         hvac_mode: '{{ desired_hvac_mode }}'
   default: []
 - choose:
+  # Шаг 2: применяем fan_mode только если режим действительно меняется.
   - conditions: '{{ desired_fan_mode | length > 0 and desired_fan_mode != current_fan_mode
       }}'
     sequence:
