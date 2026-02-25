@@ -547,6 +547,7 @@ action:
     is_day: "{% set ds = day_start %} {% set ns = night_start %} {% set t = now_hms
       %} {% if ds <= ns %}\n  {{ ds <= t and t < ns }}\n{% else %}\n  {{ t >= ds or
       t < ns }}\n{% endif %}\n"
+    is_day_bool: '{{ (is_day | string | trim | lower) == ''true'' }}'
     # === ПРИСУТСТВИЕ ===
     # presence_mode:
     # - binary_sensor: off = нет дома
@@ -558,7 +559,7 @@ action:
     presence_state: '{{ states(presence_entity) if ''.'' in presence_entity else '''' }}'
     is_away: >
       {% if '.' not in presence_entity %}
-        false
+        {{ false }}
       {% elif presence_mode == 'binary_sensor' %}
         {{ is_state(presence_entity, 'off') }}
       {% elif presence_mode == 'person_group' %}
@@ -570,14 +571,15 @@ action:
         {{ away_state != '' and presence_state == away_state }}
       {% else %}
         {% if presence_state in ['not_home', 'off', 'armed_away', 'armed_vacation', 'triggered'] %}
-          true
+          {{ true }}
         {% elif presence_state in ['home', 'on', 'disarmed', 'armed_home', 'armed_night', 'arming', 'pending'] %}
-          false
+          {{ false }}
         {% else %}
-          false
+          {{ false }}
         {% endif %}
       {% endif %}
-    target_temp: "{% if is_away %}\n  {{ temp_away | float }}\n{% elif is_day %}\n
+    is_away_bool: '{{ (is_away | string | trim | lower) == ''true'' }}'
+    target_temp: "{% if is_away_bool %}\n  {{ temp_away | float }}\n{% elif is_day_bool %}\n
       \ {{ temp_day | float }}\n{% else %}\n  {{ temp_night | float }}\n{% endif %}\n"
     # === ТЕМПЕРАТУРА ===
     temp_in_entity: '{{ temp_indoor | string }}'
@@ -663,7 +665,7 @@ action:
       true) }}'
     supported_fan_modes: '{{ state_attr(turkov_climate, ''fan_modes'') | default([],
       true) }}'
-    desired_hvac_mode: "{% if is_away and away_behavior == 'off' %}\n  off\n{% elif temp_in_valid and temp_in > (target_temp | float + temp_hysteresis_on |
+    desired_hvac_mode: "{% if is_away_bool and away_behavior == 'off' %}\n  off\n{% elif temp_in_valid and temp_in > (target_temp | float + temp_hysteresis_on |
       float) and cool_allowed %}\n  {{ hvac_mode_cool | string }}\n{% elif temp_in_valid
       and temp_in < (target_temp | float - temp_hysteresis_on | float) %}\n  {{ hvac_mode_heat
       | string }}\n{% elif humidity_clear and temp_in_valid and temp_in >= (target_temp
@@ -676,12 +678,14 @@ action:
     # 3) Если внутри выраженно плохо (>=2 триггера) -> high
     # 4) Если внутри умеренно плохо (1 триггер) -> medium
     # 5) Если всё чисто -> low
-    desired_fan_mode: "{% set boost_count = air_boost_count | int(0) %}\n{% if is_away and away_behavior == 'off' %}\n  off\n{% elif outdoor_air_bad and boost_count >= 1 %}\n  {{ fan_mode_medium | string }}\n{% elif outdoor_air_bad %}\n  {{ fan_mode_low | string }}\n{% elif boost_count >= 2 %}\n  {{ fan_mode_high | string }}\n{% elif boost_count == 1 %}\n  {{ fan_mode_medium | string }}\n{% elif all_air_clear and humidity_clear %}\n  {{ fan_mode_low | string }}\n{% else %}\n  {{ '' }}\n{% endif %}\n"
+    desired_fan_mode: "{% set boost_count = air_boost_count | int(0) %}\n{% if is_away_bool and away_behavior == 'off' %}\n  off\n{% elif outdoor_air_bad and boost_count >= 1 %}\n  {{ fan_mode_medium | string }}\n{% elif outdoor_air_bad %}\n  {{ fan_mode_low | string }}\n{% elif boost_count >= 2 %}\n  {{ fan_mode_high | string }}\n{% elif boost_count == 1 %}\n  {{ fan_mode_medium | string }}\n{% elif all_air_clear and humidity_clear %}\n  {{ fan_mode_low | string }}\n{% else %}\n  {{ '' }}\n{% endif %}\n"
 - choose:
   # Шаг 1: применяем HVAC только если режим действительно меняется.
   - conditions: '{{ (desired_hvac_mode | trim) | length > 0 and (desired_hvac_mode
       | trim) != current_hvac_mode
-      and (desired_hvac_mode | trim) in supported_hvac_modes
+      and ((desired_hvac_mode | trim) in supported_hvac_modes
+      or ((supported_hvac_modes | string | lower).find(desired_hvac_mode | trim |
+      lower) != -1))
       }}'
     sequence:
     - service: climate.set_hvac_mode
@@ -694,7 +698,9 @@ action:
   # Шаг 2: применяем fan_mode только если режим действительно меняется.
   - conditions: '{{ (desired_fan_mode | trim) | length > 0 and (desired_fan_mode
       | trim) != current_fan_mode
-      and (desired_fan_mode | trim) in supported_fan_modes
+      and ((desired_fan_mode | trim) in supported_fan_modes
+      or ((supported_fan_modes | string | lower).find((desired_fan_mode | trim |
+      lower)) != -1))
       }}'
     sequence:
     - service: climate.set_fan_mode
