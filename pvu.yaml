@@ -184,9 +184,9 @@ blueprint:
         select:
           options:
           - label: Поддерживать режим в отсутствии (temp_away)
-            value: maintain
+            value: 'maintain'
           - label: Выключать установку
-            value: off
+            value: 'off'
     schedule_day_start:
       name: 'День: начало'
       default: 07:00:00
@@ -399,8 +399,8 @@ blueprint:
             value: high
           - label: auto
             value: auto
-          - label: off
-            value: off
+          - label: 'off'
+            value: 'off'
     fan_mode_medium:
       name: 'Вентилятор: средняя скорость'
       default: medium
@@ -416,8 +416,8 @@ blueprint:
             value: high
           - label: auto
             value: auto
-          - label: off
-            value: off
+          - label: 'off'
+            value: 'off'
     fan_mode_high:
       name: 'Вентилятор: высокая скорость'
       default: high
@@ -433,8 +433,8 @@ blueprint:
             value: high
           - label: auto
             value: auto
-          - label: off
-            value: off
+          - label: 'off'
+            value: 'off'
     hvac_mode_ventilation:
       name: 'HVAC: вентиляция'
       default: fan_only
@@ -448,8 +448,8 @@ blueprint:
             value: heat
           - label: cool
             value: cool
-          - label: off
-            value: off
+          - label: 'off'
+            value: 'off'
     hvac_mode_heat:
       name: 'HVAC: нагрев'
       default: heat
@@ -463,8 +463,8 @@ blueprint:
             value: cool
           - label: fan_only
             value: fan_only
-          - label: off
-            value: off
+          - label: 'off'
+            value: 'off'
     hvac_mode_cool:
       name: 'HVAC: охлаждение'
       default: cool
@@ -478,8 +478,8 @@ blueprint:
             value: heat
           - label: fan_only
             value: fan_only
-          - label: off
-            value: off
+          - label: 'off'
+            value: 'off'
   source_url: https://github.com/Gfermoto/hass-PVU/blob/main/pvu.yaml
 trigger:
 # Пересчёт каждые 2 минуты + при изменении обязательных датчиков.
