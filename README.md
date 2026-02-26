@@ -283,11 +283,28 @@
 - Калибровка порогов по реальным данным: [`docs/TUNING.md`](./docs/TUNING.md)
 - Шаблон постоянного Lovelace-дашборда: [`airflow_dashboard.yaml`](./airflow_dashboard.yaml)
 - Облегченный постоянный дашборд: [`airflow_dashboard_min.yaml`](./airflow_dashboard_min.yaml)
+- Шаблон для режима `Manual card` (полный): [`airflow_dashboard_card.yaml`](./airflow_dashboard_card.yaml)
+- Шаблон для режима `Manual card` (облегченный): [`airflow_dashboard_min_card.yaml`](./airflow_dashboard_min_card.yaml)
+- KPI-пакет для верификации порогов на реальных данных: [`airflow_kpi_package.yaml`](./airflow_kpi_package.yaml)
 - FAQ: [`docs/FAQ.md`](./docs/FAQ.md)
 - Шаблоны issues: [`.github/ISSUE_TEMPLATE`](./.github/ISSUE_TEMPLATE)
 - Базовая CI-валидация (Markdown/YAML): [`.github/workflows/validate.yml`](./.github/workflows/validate.yml)
 - Материал для статьи: [`docs/ARTICLE_RU.md`](./docs/ARTICLE_RU.md)
 - Короткий анонс для Telegram: [`docs/TG_POST_RU.md`](./docs/TG_POST_RU.md)
+
+### Импорт Lovelace без ошибок
+
+- Для **целого дашборда** используйте файлы `airflow_dashboard*.yaml` и вставляйте их через **Панели управления -> Редактировать в YAML**.
+- Для **ручной карточки** используйте файлы `airflow_dashboard*_card.yaml` и вставляйте их в **Manual card**.
+- Ошибка `No card type configured` обычно означает, что YAML целого дашборда вставлен в редактор одной карточки.
+
+### Быстрый запуск KPI-верификации
+
+- Подключите `airflow_kpi_package.yaml` как package в Home Assistant.
+- Замените `entity_id` в пакете под свои сенсоры и climate-сущность.
+- После перезапуска используйте новые сущности:
+  - `sensor.airflow_*_ok_percent_24h` — доля времени в целевой зоне;
+  - `sensor.airflow_boost_fan_percent_24h` — доля времени fan в `medium/high`.
 
 ### Поддержка и обратная связь
 - GitHub Issues: [создать обращение](https://github.com/Gfermoto/hass-PVU/issues)

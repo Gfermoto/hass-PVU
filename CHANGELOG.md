@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.4.2
+
+- Закрыт Этап 2 из `docs/ROADMAP.md` полностью.
+- Добавлен готовый пакет KPI для верификации порогов на реальных данных: [`airflow_kpi_package.yaml`](./airflow_kpi_package.yaml).
+- Добавлены шаблоны для режима `Manual card`: [`airflow_dashboard_card.yaml`](./airflow_dashboard_card.yaml) и [`airflow_dashboard_min_card.yaml`](./airflow_dashboard_min_card.yaml).
+- Обновлены инструкции в `README.md`, `docs/TUNING.md` и `docs/FAQ.md` (импорт dashboard vs manual card, устранение `No card type configured`).
+
 ## v0.4.0
 
 - Реализован Этап 2 из `docs/ROADMAP.md` (часть, которую можно закрыть в коде и UX).

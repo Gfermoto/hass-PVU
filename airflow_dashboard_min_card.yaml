@@ -1,0 +1,44 @@
+type: vertical-stack
+cards:
+  - type: markdown
+    content: |
+      ## Turkov AirFlow Lite
+      Облегченная карточка для существующего дашборда Home Assistant.
+      Замените `entity_id` под свои сущности.
+
+  - type: entities
+    title: Базовое состояние
+    show_header_toggle: false
+    entities:
+      - entity: climate.pvu
+        name: Климат (climate)
+      - type: attribute
+        entity: climate.pvu
+        attribute: fan_mode
+        name: Скорость вентилятора
+      - entity: sensor.indoor_temperature
+        name: Температура в помещении
+      - entity: sensor.indoor_humidity
+        name: Влажность в помещении
+      - entity: sensor.indoor_co2
+        name: CO2 в помещении
+
+  - type: history-graph
+    title: "Ключевые графики (48ч)"
+    hours_to_show: 48
+    refresh_interval: 60
+    entities:
+      - entity: sensor.indoor_co2
+        name: CO2 indoor
+      - entity: sensor.indoor_temperature
+        name: Температура в помещении
+      - entity: sensor.indoor_humidity
+        name: Влажность в помещении
+
+  - type: history-graph
+    title: Режимы климата и вентиляции (48ч)
+    hours_to_show: 48
+    refresh_interval: 60
+    entities:
+      - entity: climate.pvu
+        name: Режим HVAC

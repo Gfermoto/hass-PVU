@@ -47,6 +47,27 @@
 - после каждого изменения наблюдайте минимум 24 часа;
 - фиксируйте, стало ли меньше ложных разгонов без потери комфорта.
 
+## Почему в Lovelace появляется ошибка `No card type configured`?
+
+Обычно это происходит, когда YAML целого дашборда вставляют в редактор одной карточки.
+
+Используйте правильно:
+
+- для **целого дашборда**: `airflow_dashboard.yaml` или `airflow_dashboard_min.yaml` (через "Редактировать в YAML");
+- для **Manual card**: `airflow_dashboard_card.yaml` или `airflow_dashboard_min_card.yaml`.
+
+## Как закрыть верификацию порогов не "на глаз", а по метрикам?
+
+Подключите пакет [`airflow_kpi_package.yaml`](../airflow_kpi_package.yaml), после чего отслеживайте:
+
+- `sensor.airflow_co2_ok_percent_24h`
+- `sensor.airflow_pm25_ok_percent_24h`
+- `sensor.airflow_voc_ok_percent_24h`
+- `sensor.airflow_nox_ok_percent_24h`
+- `sensor.airflow_boost_fan_percent_24h`
+
+Эти показатели дают объективную картину по суткам и позволяют корректно завершить этап верификации.
+
 ## Какой минимальный набор для старта?
 
 - `climate` сущность Turkov;

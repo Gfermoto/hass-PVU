@@ -1,0 +1,137 @@
+# Пакет KPI для верификации порогов AirFlow на реальных данных.
+# Добавьте файл как package в Home Assistant и замените entity_id под свои сущности.
+
+input_number:
+  airflow_co2_target:
+    name: AirFlow CO2 target
+    min: 400
+    max: 2000
+    step: 10
+    unit_of_measurement: ppm
+    mode: box
+    initial: 1000
+  airflow_pm25_target:
+    name: AirFlow PM2.5 target
+    min: 5
+    max: 200
+    step: 1
+    unit_of_measurement: ug/m3
+    mode: box
+    initial: 25
+  airflow_voc_target:
+    name: AirFlow VOC target
+    min: 1
+    max: 1000
+    step: 1
+    mode: box
+    initial: 300
+  airflow_nox_target:
+    name: AirFlow NOx target
+    min: 1
+    max: 500
+    step: 1
+    mode: box
+    initial: 20
+
+template:
+  - sensor:
+      - name: AirFlow Fan Mode
+        unique_id: airflow_fan_mode
+        state: "{{ state_attr('climate.pvu', 'fan_mode') | default('unknown', true) }}"
+      - name: AirFlow HVAC Mode
+        unique_id: airflow_hvac_mode
+        state: "{{ states('climate.pvu') }}"
+      - name: AirFlow CO2 OK Percent 24h
+        unique_id: airflow_co2_ok_percent_24h
+        unit_of_measurement: "%"
+        state: >
+          {{ ((states('sensor.airflow_co2_ok_time_24h') | float(0)) / 24 * 100) | round(1) }}
+      - name: AirFlow PM2.5 OK Percent 24h
+        unique_id: airflow_pm25_ok_percent_24h
+        unit_of_measurement: "%"
+        state: >
+          {{ ((states('sensor.airflow_pm25_ok_time_24h') | float(0)) / 24 * 100) | round(1) }}
+      - name: AirFlow VOC OK Percent 24h
+        unique_id: airflow_voc_ok_percent_24h
+        unit_of_measurement: "%"
+        state: >
+          {{ ((states('sensor.airflow_voc_ok_time_24h') | float(0)) / 24 * 100) | round(1) }}
+      - name: AirFlow NOx OK Percent 24h
+        unique_id: airflow_nox_ok_percent_24h
+        unit_of_measurement: "%"
+        state: >
+          {{ ((states('sensor.airflow_nox_ok_time_24h') | float(0)) / 24 * 100) | round(1) }}
+      - name: AirFlow Boost Fan Percent 24h
+        unique_id: airflow_boost_fan_percent_24h
+        unit_of_measurement: "%"
+        state: >
+          {{ ((states('sensor.airflow_boost_fan_time_24h') | float(0)) / 24 * 100) | round(1) }}
+
+  - binary_sensor:
+      - name: AirFlow CO2 OK
+        unique_id: airflow_co2_ok
+        state: >
+          {{ states('sensor.indoor_co2') | float(0) <= states('input_number.airflow_co2_target') | float(1000) }}
+      - name: AirFlow PM2.5 OK
+        unique_id: airflow_pm25_ok
+        state: >
+          {{ states('sensor.indoor_pm25') | float(0) <= states('input_number.airflow_pm25_target') | float(25) }}
+      - name: AirFlow VOC OK
+        unique_id: airflow_voc_ok
+        state: >
+          {{ states('sensor.indoor_voc') | float(0) <= states('input_number.airflow_voc_target') | float(300) }}
+      - name: AirFlow NOx OK
+        unique_id: airflow_nox_ok
+        state: >
+          {{ states('sensor.indoor_nox') | float(0) <= states('input_number.airflow_nox_target') | float(20) }}
+      - name: AirFlow Boost Fan Active
+        unique_id: airflow_boost_fan_active
+        state: >
+          {% set mode = states('sensor.airflow_fan_mode') | lower %}
+          {{ mode in ['medium', 'high'] }}
+
+sensor:
+  - platform: history_stats
+    name: AirFlow CO2 OK Time 24h
+    entity_id: binary_sensor.airflow_co2_ok
+    state: "on"
+    type: time
+    duration:
+      hours: 24
+    end: "{{ now() }}"
+
+  - platform: history_stats
+    name: AirFlow PM2.5 OK Time 24h
+    entity_id: binary_sensor.airflow_pm25_ok
+    state: "on"
+    type: time
+    duration:
+      hours: 24
+    end: "{{ now() }}"
+
+  - platform: history_stats
+    name: AirFlow VOC OK Time 24h
+    entity_id: binary_sensor.airflow_voc_ok
+    state: "on"
+    type: time
+    duration:
+      hours: 24
+    end: "{{ now() }}"
+
+  - platform: history_stats
+    name: AirFlow NOx OK Time 24h
+    entity_id: binary_sensor.airflow_nox_ok
+    state: "on"
+    type: time
+    duration:
+      hours: 24
+    end: "{{ now() }}"
+
+  - platform: history_stats
+    name: AirFlow Boost Fan Time 24h
+    entity_id: binary_sensor.airflow_boost_fan_active
+    state: "on"
+    type: time
+    duration:
+      hours: 24
+    end: "{{ now() }}"

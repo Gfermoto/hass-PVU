@@ -70,6 +70,9 @@
 
 - [`airflow_dashboard.yaml`](../airflow_dashboard.yaml)
 - [`airflow_dashboard_min.yaml`](../airflow_dashboard_min.yaml)
+- [`airflow_dashboard_card.yaml`](../airflow_dashboard_card.yaml) (для `Manual card`)
+- [`airflow_dashboard_min_card.yaml`](../airflow_dashboard_min_card.yaml) (для `Manual card`)
+- [`airflow_kpi_package.yaml`](../airflow_kpi_package.yaml) (KPI-верификация порогов)
 
 Как применить:
 
@@ -78,7 +81,29 @@
 3. Замените `entity_id` под свои сущности (`climate.pvu`, `sensor.indoor_*`, `sensor.outdoor_*`).
 4. Сохраните и наблюдайте 3-7 дней по шагам из этого документа.
 
-## 7) Важные замечания
+Если хотите вставить не целый дашборд, а одну карточку в существующую панель:
+
+1. Откройте **Добавить карточку -> Manual card**.
+2. Используйте `airflow_dashboard_card.yaml` или `airflow_dashboard_min_card.yaml`.
+3. Не вставляйте туда `airflow_dashboard.yaml`/`airflow_dashboard_min.yaml`, иначе получите ошибку `No card type configured`.
+
+## 7) KPI-пакет для закрытия верификации
+
+Чтобы верификация была не "на глаз", подключите:
+
+- [`airflow_kpi_package.yaml`](../airflow_kpi_package.yaml)
+
+Что дает пакет:
+
+- `sensor.airflow_co2_ok_percent_24h`
+- `sensor.airflow_pm25_ok_percent_24h`
+- `sensor.airflow_voc_ok_percent_24h`
+- `sensor.airflow_nox_ok_percent_24h`
+- `sensor.airflow_boost_fan_percent_24h`
+
+Это позволяет объективно сравнивать изменения порогов по суткам и закрывать проверку на реальных данных.
+
+## 8) Важные замечания
 
 - VOC/NOx в AirGradient обычно индексные величины, а не абсолютная концентрация газа.
 - Не меняйте много параметров одновременно: 1-2 порога за итерацию.
