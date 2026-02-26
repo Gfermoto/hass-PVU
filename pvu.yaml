@@ -280,6 +280,17 @@ blueprint:
           max: 20.0
           step: 1.0
           mode: box
+    outdoor_temp_policy:
+      name: '🛡️ Если t снаружи неизвестна'
+      default: conservative
+      description: 'conservative: запрещать cooling/fan_only без датчика улицы; permissive: разрешать по умолчанию.'
+      selector:
+        select:
+          options:
+          - label: conservative (безопасно)
+            value: conservative
+          - label: permissive (разрешать)
+            value: permissive
     humidity_high:
       name: '🎚️ Влажность: включить усиление (%)'
       default: 70
@@ -516,6 +527,12 @@ blueprint:
             value: fan_only
           - label: 'off'
             value: 'off'
+    debug_mode:
+      name: '🪵 Диагностика (уведомления)'
+      default: false
+      description: Если включено, automation создаёт persistent_notification при важных решениях и ограничениях.
+      selector:
+        boolean: {}
   source_url: https://github.com/Gfermoto/hass-PVU/blob/main/pvu.yaml
 trigger:
 # Пересчёт каждые 2 минуты + при изменении ключевых/опциональных датчиков.
@@ -571,6 +588,7 @@ action:
     temp_hysteresis_off: !input temp_hysteresis_off
     outdoor_cool_min: !input outdoor_cool_min
     outdoor_vent_min: !input outdoor_vent_min
+    outdoor_temp_policy: !input outdoor_temp_policy
     humidity_high: !input humidity_high
     humidity_low: !input humidity_low
     co2_high: !input co2_high
@@ -591,6 +609,7 @@ action:
     hvac_mode_ventilation: !input hvac_mode_ventilation
     hvac_mode_heat: !input hvac_mode_heat
     hvac_mode_cool: !input hvac_mode_cool
+    debug_mode: !input debug_mode
     away_behavior: !input away_behavior
     presence_mode: !input presence_mode
     presence_away_state: !input presence_away_state
@@ -653,9 +672,12 @@ action:
     temp_out_valid: '{{ ''.'' in temp_out_entity and states(temp_out_entity) not in
       [''unknown'', ''unavailable'', ''none'', ''None'', ''''] }}'
     temp_out: '{{ states(temp_out_entity) | float(0) }}'
-    cool_allowed: '{{ (not temp_out_valid) or (temp_out > outdoor_cool_min | float)
-      }}'
-    vent_allowed: '{{ (not temp_out_valid) or (temp_out > outdoor_vent_min | float)
+    outdoor_unknown_allows: '{{ (outdoor_temp_policy | string) != ''conservative'' }}'
+    cool_allowed: '{{ (temp_out_valid and temp_out > outdoor_cool_min | float) or ((not
+      temp_out_valid) and outdoor_unknown_allows) }}'
+    vent_allowed: '{{ (temp_out_valid and temp_out > outdoor_vent_min | float) or ((not
+      temp_out_valid) and outdoor_unknown_allows) }}'
+    outdoor_unknown_limited: '{{ (not temp_out_valid) and (not outdoor_unknown_allows)
       }}'
     # === ВЛАЖНОСТЬ ===
     humidity_entity: '{{ humidity_indoor | string }}'
@@ -752,6 +774,13 @@ action:
     # 4) Если внутри умеренно плохо (1 триггер) -> medium
     # 5) Если всё чисто -> low
     desired_fan_mode: "{% set boost_count = air_boost_count | int(0) %}\n{% if is_away_bool and away_behavior == 'off' %}\n  off\n{% elif outdoor_air_bad and boost_count >= 1 %}\n  {{ fan_mode_medium | string }}\n{% elif outdoor_air_bad %}\n  {{ fan_mode_low | string }}\n{% elif boost_count >= 2 %}\n  {{ fan_mode_high | string }}\n{% elif boost_count == 1 %}\n  {{ fan_mode_medium | string }}\n{% elif all_air_clear and humidity_clear %}\n  {{ fan_mode_low | string }}\n{% else %}\n  {{ '' }}\n{% endif %}\n"
+    debug_enabled: '{{ debug_mode | bool }}'
+    debug_need_notify: '{{ debug_enabled and (outdoor_unknown_limited or (not climate_available)
+      or ((desired_hvac_mode | trim) | length > 0 and (desired_hvac_mode | trim) !=
+      current_hvac_mode) or ((desired_fan_mode | trim) | length > 0 and (desired_fan_mode
+      | trim) != current_fan_mode) or ((current_target_temp - (target_temp | float))
+      | abs > 0.2)) }}'
+    debug_message: "Blueprint: Turkov AirFlow (develop)\nclimate_available={{ climate_available }}\noutdoor_temp_valid={{ temp_out_valid }}\noutdoor_policy={{ outdoor_temp_policy }}\noutdoor_limited={{ outdoor_unknown_limited }}\n\nis_day={{ is_day_bool }}\nis_away={{ is_away_bool }}\n\ncurrent_hvac={{ current_hvac_mode }} -> desired_hvac={{ desired_hvac_mode | trim }}\ncurrent_fan={{ current_fan_mode }} -> desired_fan={{ desired_fan_mode | trim }}\ncurrent_target={{ current_target_temp }} -> target={{ target_temp | float }}\n\ncool_allowed={{ cool_allowed }}\nvent_allowed={{ vent_allowed }}\noutdoor_air_bad={{ outdoor_air_bad }}\nair_boost_count={{ air_boost_count | int(0) }}\n"
 - choose:
   # Шаг 0: применяем целевую уставку температуры (режим поддержания), если она изменилась.
   - conditions: '{{ climate_available and not (is_away_bool and away_behavior == ''off'')
@@ -794,5 +823,14 @@ action:
         entity_id: !input turkov_climate
       data:
         fan_mode: '{{ desired_fan_mode | trim }}'
+  default: []
+- choose:
+  # Шаг 3: отладка (по требованию)
+  - conditions: '{{ debug_need_notify }}'
+    sequence:
+    - service: persistent_notification.create
+      data:
+        title: Turkov AirFlow debug
+        message: '{{ debug_message }}'
   default: []
 mode: single
