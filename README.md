@@ -69,6 +69,7 @@
 - Команды применяются в два шага:
   1) `climate.set_temperature` (установка уставки, если изменилась);
   2) `climate.set_hvac_mode` (если целевой режим отличается от текущего).
+- Для HVAC добавлен anti-flap контроль: `hvac_min_switch_minutes` задаёт минимальный интервал между переключениями режимов.
 
 #### 2. Антизаморозка и ограничения по наружной температуре
 - Охлаждение разрешается только если `temp_outdoor > outdoor_cool_min`.
@@ -82,6 +83,7 @@
 - Логика 3 ступеней: `low` -> `medium` -> `high`.
 - Источники разгона: влажность и/или загрязнение воздуха внутри (CO2/PM2.5/VOC/NOx).
 - Наружные датчики качества воздуха ограничивают агрессивный разгон (при плохом наружном воздухе максимум `medium`).
+- В develop-ветке доступен плавный спад скорости (`fan_stepdown_enabled`): при очистке воздуха переход идёт ступенчато `high -> medium -> low`.
 
 #### 4. Presence и режим отсутствия
 - Поддерживаются источники: `binary_sensor`, `person/group`, `alarm_control_panel`, `custom`.
@@ -96,6 +98,7 @@
   - целевой режим не пустой;
   - целевой режим отличается от текущего;
   - целевой режим присутствует в `hvac_modes` / `fan_modes` устройства.
+- Для HVAC дополнительно проверяется минимальный интервал переключений (`hvac_min_switch_minutes`), чтобы избежать частых дерганий режима.
 - Это защищает от ошибок на устройствах с неполным набором режимов.
 - Дополнительно проверяется доступность `climate`-сущности (`unavailable/unknown` не допускаются к сервис-вызовам).
 
@@ -103,6 +106,7 @@
 - Параметр `debug_mode` включает диагностические `persistent_notification`.
 - Уведомления показывают:
   - текущие/целевые режимы;
+  - причины, почему режим не применён (`desired_empty`, `already_set`, `unsupported_mode`, `min_interval_hold`, `climate_unavailable`);
   - причины ограничений (например, неизвестная `temp_outdoor` при `conservative`);
   - расчётные флаги (`cool_allowed`, `vent_allowed`, `air_boost_count`).
 
@@ -276,6 +280,9 @@
 - Руководство для контрибьюторов: [`CONTRIBUTING.md`](./CONTRIBUTING.md)
 - Релизный чеклист: [`docs/RELEASE_CHECKLIST.md`](./docs/RELEASE_CHECKLIST.md)
 - Дорожная карта: [`docs/ROADMAP.md`](./docs/ROADMAP.md)
+- Калибровка порогов по реальным данным: [`docs/TUNING.md`](./docs/TUNING.md)
+- Шаблон постоянного Lovelace-дашборда: [`airflow_dashboard.yaml`](./airflow_dashboard.yaml)
+- Облегченный постоянный дашборд: [`airflow_dashboard_min.yaml`](./airflow_dashboard_min.yaml)
 - FAQ: [`docs/FAQ.md`](./docs/FAQ.md)
 - Шаблоны issues: [`.github/ISSUE_TEMPLATE`](./.github/ISSUE_TEMPLATE)
 - Базовая CI-валидация (Markdown/YAML): [`.github/workflows/validate.yml`](./.github/workflows/validate.yml)

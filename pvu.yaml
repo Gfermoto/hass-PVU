@@ -306,6 +306,16 @@ blueprint:
                 value: conservative
               - label: permissive (разрешать)
                 value: permissive
+        hvac_min_switch_minutes:
+          name: '⏱️ HVAC: мин. интервал переключения (мин)'
+          default: 15
+          description: Минимальная пауза между сменами HVAC-режима (защита от дрожания и частых переключений).
+          selector:
+            number:
+              min: 0.0
+              max: 60.0
+              step: 1.0
+              mode: box
     section_air_quality:
       name: '🫁 Качество воздуха и пороги'
       icon: mdi:molecule-co2
@@ -558,6 +568,12 @@ blueprint:
           description: Если включено, automation создаёт persistent_notification при важных решениях и ограничениях.
           selector:
             boolean: {}
+        fan_stepdown_enabled:
+          name: '🪜 Плавный спад вентилятора'
+          default: true
+          description: При очистке воздуха снижает скорость ступенчато (high -> medium -> low), без резкого сброса.
+          selector:
+            boolean: {}
   source_url: https://github.com/Gfermoto/hass-PVU/blob/main/pvu.yaml
 trigger:
 # Пересчёт каждые 2 минуты + при изменении ключевых/опциональных датчиков.
@@ -614,6 +630,7 @@ action:
     outdoor_cool_min: !input outdoor_cool_min
     outdoor_vent_min: !input outdoor_vent_min
     outdoor_temp_policy: !input outdoor_temp_policy
+    hvac_min_switch_minutes: !input hvac_min_switch_minutes
     humidity_high: !input humidity_high
     humidity_low: !input humidity_low
     co2_high: !input co2_high
@@ -635,6 +652,7 @@ action:
     hvac_mode_heat: !input hvac_mode_heat
     hvac_mode_cool: !input hvac_mode_cool
     debug_mode: !input debug_mode
+    fan_stepdown_enabled: !input fan_stepdown_enabled
     away_behavior: !input away_behavior
     presence_mode: !input presence_mode
     presence_away_state: !input presence_away_state
@@ -808,6 +826,12 @@ action:
       true) }}'
     supported_fan_modes: '{{ state_attr(turkov_climate, ''fan_modes'') | default([],
       true) }}'
+    now_ts: '{{ as_timestamp(now()) | float(0) }}'
+    hvac_last_changed_ts: '{{ as_timestamp(states[turkov_climate].last_changed) | float(0)
+      }}'
+    hvac_elapsed_sec: '{{ (now_ts | float(0)) - (hvac_last_changed_ts | float(0)) }}'
+    hvac_switch_allowed: '{{ (hvac_elapsed_sec | float(0)) >= ((hvac_min_switch_minutes
+      | float(0)) * 60) }}'
     desired_hvac_mode: "{% if is_away_bool and away_behavior == 'off' %}\n  off\n{% elif temp_in_valid and temp_in > (target_temp | float + temp_hysteresis_on |
       float) and cool_allowed %}\n  {{ hvac_mode_cool | string }}\n{% elif temp_in_valid
       and temp_in < (target_temp | float - temp_hysteresis_on | float) %}\n  {{ hvac_mode_heat
@@ -819,20 +843,36 @@ action:
       temp_hysteresis_off | float) and (not vent_allowed) %}\n  {{ hvac_mode_heat
       | string }}\n{% else
       %}\n  {{ '' }}\n{% endif %}\n"
-    # Логика вентилятора (3 ступени):
+    # Логика вентилятора (3 ступени + плавный спад):
     # 1) Если никого нет и выбран away=off -> off
     # 2) Если снаружи воздух плохой, ограничиваем разгон (max = medium)
     # 3) Если внутри выраженно плохо (>=2 триггера) -> high
     # 4) Если внутри умеренно плохо (1 триггер) -> medium
-    # 5) Если всё чисто -> low
-    desired_fan_mode: "{% set boost_count = air_boost_count | int(0) %}\n{% if is_away_bool and away_behavior == 'off' %}\n  off\n{% elif outdoor_air_bad and boost_count >= 1 %}\n  {{ fan_mode_medium | string }}\n{% elif outdoor_air_bad %}\n  {{ fan_mode_low | string }}\n{% elif boost_count >= 2 %}\n  {{ fan_mode_high | string }}\n{% elif boost_count == 1 %}\n  {{ fan_mode_medium | string }}\n{% elif all_air_clear and humidity_clear %}\n  {{ fan_mode_low | string }}\n{% else %}\n  {{ '' }}\n{% endif %}\n"
+    # 5) Если всё чисто -> low (или ступенькой high -> medium -> low, если включен fan_stepdown_enabled)
+    desired_fan_mode: "{% set boost_count = air_boost_count | int(0) %}\n{% set current_fan = (current_fan_mode | string | lower) %}\n{% if is_away_bool and away_behavior == 'off' %}\n  off\n{% elif outdoor_air_bad and boost_count >= 1 %}\n  {{ fan_mode_medium | string }}\n{% elif outdoor_air_bad %}\n  {{ fan_mode_low | string }}\n{% elif boost_count >= 2 %}\n  {{ fan_mode_high | string }}\n{% elif boost_count == 1 %}\n  {{ fan_mode_medium | string }}\n{% elif all_air_clear and humidity_clear and (fan_stepdown_enabled | bool) and current_fan == 'high' %}\n  {{ fan_mode_medium | string }}\n{% elif all_air_clear and humidity_clear and (fan_stepdown_enabled | bool) and current_fan == 'medium' %}\n  {{ fan_mode_low | string }}\n{% elif all_air_clear and humidity_clear %}\n  {{ fan_mode_low | string }}\n{% else %}\n  {{ '' }}\n{% endif %}\n"
+    hvac_apply_reason: "{% set desired = (desired_hvac_mode | trim | lower) %}\n{% set current
+      = (current_hvac_mode | string | lower) %}\n{% set modes = supported_hvac_modes | default([],
+      true) %}\n{% set modes_lc = (modes | map('string') | map('lower') | list) if (modes
+      is iterable and modes is not string) else [modes | string | lower] %}\n{% if not
+      climate_available %}\n  climate_unavailable\n{% elif desired | length == 0 %}\n
+      desired_empty\n{% elif desired == current %}\n  already_set\n{% elif not (hvac_switch_allowed
+      | bool) %}\n  min_interval_hold\n{% elif desired not in modes_lc %}\n  unsupported_mode\n{%
+      else %}\n  apply\n{% endif %}\n"
+    fan_apply_reason: "{% set desired = (desired_fan_mode | trim | lower) %}\n{% set current
+      = (current_fan_mode | string | lower) %}\n{% set modes = supported_fan_modes | default([],
+      true) %}\n{% set modes_lc = (modes | map('string') | map('lower') | list) if (modes
+      is iterable and modes is not string) else [modes | string | lower] %}\n{% if not
+      climate_available %}\n  climate_unavailable\n{% elif desired | length == 0 %}\n
+      desired_empty\n{% elif desired == current %}\n  already_set\n{% elif desired not
+      in modes_lc %}\n  unsupported_mode\n{% else %}\n  apply\n{% endif %}\n"
     debug_enabled: '{{ debug_mode | bool }}'
     debug_need_notify: '{{ debug_enabled and (outdoor_unknown_limited or (not climate_available)
-      or ((desired_hvac_mode | trim) | length > 0 and (desired_hvac_mode | trim) !=
-      current_hvac_mode) or ((desired_fan_mode | trim) | length > 0 and (desired_fan_mode
-      | trim) != current_fan_mode) or ((current_target_temp - (target_temp | float))
+      or ((hvac_apply_reason | trim) != ''already_set'' and (hvac_apply_reason | trim)
+      != ''desired_empty'') or ((fan_apply_reason | trim) != ''already_set'' and (fan_apply_reason
+      | trim) != ''desired_empty'')
+      or ((current_target_temp - (target_temp | float))
       | abs > 0.2)) }}'
-    debug_message: "Blueprint: Turkov AirFlow (develop)\nclimate_available={{ climate_available }}\noutdoor_temp_valid={{ temp_out_valid }}\noutdoor_policy={{ outdoor_temp_policy }}\noutdoor_limited={{ outdoor_unknown_limited }}\n\nis_day={{ is_day_bool }}\nis_away={{ is_away_bool }}\n\ncurrent_hvac={{ current_hvac_mode }} -> desired_hvac={{ desired_hvac_mode | trim }}\ncurrent_fan={{ current_fan_mode }} -> desired_fan={{ desired_fan_mode | trim }}\ncurrent_target={{ current_target_temp }} -> target={{ target_temp | float }}\n\ncool_allowed={{ cool_allowed }}\nvent_allowed={{ vent_allowed }}\noutdoor_air_bad={{ outdoor_air_bad }}\nair_boost_count={{ air_boost_count | int(0) }}\n"
+    debug_message: "Blueprint: Turkov AirFlow (develop)\nclimate_available={{ climate_available }}\noutdoor_temp_valid={{ temp_out_valid }}\noutdoor_policy={{ outdoor_temp_policy }}\noutdoor_limited={{ outdoor_unknown_limited }}\n\nis_day={{ is_day_bool }}\nis_away={{ is_away_bool }}\n\ncurrent_hvac={{ current_hvac_mode }} -> desired_hvac={{ desired_hvac_mode | trim }}\nhvac_reason={{ hvac_apply_reason | trim }}\nhvac_min_switch_minutes={{ hvac_min_switch_minutes | float(0) }}\nhvac_elapsed_sec={{ hvac_elapsed_sec | int(0) }}\n\ncurrent_fan={{ current_fan_mode }} -> desired_fan={{ desired_fan_mode | trim }}\nfan_reason={{ fan_apply_reason | trim }}\nfan_stepdown_enabled={{ fan_stepdown_enabled | bool }}\n\ncurrent_target={{ current_target_temp }} -> target={{ target_temp | float }}\n\ncool_allowed={{ cool_allowed }}\nvent_allowed={{ vent_allowed }}\noutdoor_air_bad={{ outdoor_air_bad }}\nair_boost_count={{ air_boost_count | int(0) }}\n"
 - choose:
   # Шаг 0: применяем целевую уставку температуры (режим поддержания), если она изменилась.
   - conditions: '{{ climate_available and not (is_away_bool and away_behavior == ''off'')
@@ -847,14 +887,9 @@ action:
         temperature: '{{ target_temp | float }}'
   default: []
 - choose:
-  # Шаг 1: применяем HVAC только если режим действительно меняется
-  # и поддерживается устройством. Если не поддерживается — сохраняем текущий режим.
-  - conditions: "{% set desired = (desired_hvac_mode | trim | lower) %}\n{% set current
-      = (current_hvac_mode | string | lower) %}\n{% set modes = supported_hvac_modes
-      | default([], true) %}\n{% set modes_lc = (modes | map('string') | map('lower')
-      | list) if (modes is iterable and modes is not string) else [modes | string
-      | lower] %}\n{{ climate_available and desired | length > 0 and desired !=
-      current and desired in modes_lc }}\n"
+  # Шаг 1: применяем HVAC только при валидной цели, поддержке режима и соблюдении
+  # минимального интервала между переключениями (anti-flap).
+  - conditions: '{{ (hvac_apply_reason | trim) == ''apply'' }}'
     sequence:
     - service: climate.set_hvac_mode
       target:
@@ -865,12 +900,7 @@ action:
 - choose:
   # Шаг 2: применяем fan_mode только если режим действительно меняется
   # и поддерживается устройством. Если не поддерживается — сохраняем текущий режим.
-  - conditions: "{% set desired = (desired_fan_mode | trim | lower) %}\n{% set current
-      = (current_fan_mode | string | lower) %}\n{% set modes = supported_fan_modes
-      | default([], true) %}\n{% set modes_lc = (modes | map('string') | map('lower')
-      | list) if (modes is iterable and modes is not string) else [modes | string
-      | lower] %}\n{{ climate_available and desired | length > 0 and desired !=
-      current and desired in modes_lc }}\n"
+  - conditions: '{{ (fan_apply_reason | trim) == ''apply'' }}'
     sequence:
     - service: climate.set_fan_mode
       target:

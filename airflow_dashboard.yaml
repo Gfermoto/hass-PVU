@@ -1,0 +1,96 @@
+title: Turkov AirFlow
+views:
+  - title: AirFlow Home
+    path: airflow
+    icon: mdi:hvac
+    badges: []
+    cards:
+      - type: markdown
+        content: |
+          ## Turkov AirFlow
+          Постоянный дашборд для ежедневного мониторинга вентиляции и периодической калибровки порогов.
+          Замените `entity_id` под свои сущности.
+
+      - type: entities
+        title: Текущее состояние установки
+        show_header_toggle: false
+        entities:
+          - entity: climate.pvu
+            name: Климат (climate)
+          - type: attribute
+            entity: climate.pvu
+            attribute: fan_mode
+            name: Текущая скорость вентилятора
+          - type: attribute
+            entity: climate.pvu
+            attribute: hvac_action
+            name: Действие HVAC
+          - type: attribute
+            entity: climate.pvu
+            attribute: temperature
+            name: Целевая температура
+          - entity: sensor.indoor_temperature
+            name: Температура в помещении
+          - entity: sensor.indoor_humidity
+            name: Влажность в помещении
+          - entity: sensor.indoor_co2
+            name: CO2 в помещении
+
+      - type: history-graph
+        title: "Качество воздуха внутри (72ч)"
+        hours_to_show: 72
+        refresh_interval: 60
+        entities:
+          - entity: sensor.indoor_co2
+            name: CO2 indoor
+          - entity: sensor.indoor_pm25
+            name: PM2.5 indoor
+          - entity: sensor.indoor_voc
+            name: VOC indoor
+          - entity: sensor.indoor_nox
+            name: NOx indoor
+
+      - type: history-graph
+        title: "Качество воздуха снаружи (72ч)"
+        hours_to_show: 72
+        refresh_interval: 60
+        entities:
+          - entity: sensor.outdoor_co2
+            name: CO2 outdoor
+          - entity: sensor.outdoor_pm25
+            name: PM2.5 outdoor
+          - entity: sensor.outdoor_voc
+            name: VOC outdoor
+          - entity: sensor.outdoor_nox
+            name: NOx outdoor
+
+      - type: history-graph
+        title: Режимы климата и вентиляции (72ч)
+        hours_to_show: 72
+        refresh_interval: 60
+        entities:
+          - entity: climate.pvu
+            name: Режим HVAC
+
+      - type: statistics-graph
+        title: Дневная статистика (7 дней)
+        days_to_show: 7
+        stat_types:
+          - mean
+          - max
+        period: day
+        entities:
+          - sensor.indoor_co2
+          - sensor.indoor_pm25
+
+      - type: entities
+        title: Тюнинг и валидация
+        show_header_toggle: false
+        entities:
+          - type: weblink
+            name: Гайд по калибровке порогов
+            url: https://github.com/Gfermoto/hass-PVU/blob/main/docs/TUNING.md
+          - type: attribute
+            entity: climate.pvu
+            attribute: fan_mode
+            name: Если часто high/medium без причины, смягчайте пороги небольшими шагами

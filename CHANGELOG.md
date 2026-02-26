@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.4.0
+
+- Реализован Этап 2 из `docs/ROADMAP.md` (часть, которую можно закрыть в коде и UX).
+- В `pvu.yaml` добавлен антидребезг HVAC: параметр `hvac_min_switch_minutes` и защита от частых переключений (`min_interval_hold`).
+- Для вентилятора реализован плавный спад скорости (`fan_stepdown_enabled`): `high -> medium -> low` при очистке воздуха.
+- Расширен `debug_mode`: добавлены явные причины неприменения режима (`desired_empty`, `already_set`, `unsupported_mode`, `min_interval_hold`, `climate_unavailable`).
+- Уточнены `README.md` и `docs/ROADMAP.md` под новую логику Этапа 2.
+
 ## v0.3.4
 
 - Выполнен Этап 1 из `docs/ROADMAP.md` (low-hanging fruits).
