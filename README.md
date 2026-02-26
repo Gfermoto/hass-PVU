@@ -265,6 +265,15 @@
    - MQTT брокер
    - HACS
 
+### Разработка и качество
+
+- Руководство для контрибьюторов: [`CONTRIBUTING.md`](./CONTRIBUTING.md)
+- Релизный чеклист: [`docs/RELEASE_CHECKLIST.md`](./docs/RELEASE_CHECKLIST.md)
+- Шаблоны issues: [`.github/ISSUE_TEMPLATE`](./.github/ISSUE_TEMPLATE)
+- Базовая CI-валидация (Markdown/YAML): [`.github/workflows/validate.yml`](./.github/workflows/validate.yml)
+- Материал для статьи: [`docs/ARTICLE_RU.md`](./docs/ARTICLE_RU.md)
+- Короткий анонс для Telegram: [`docs/TG_POST_RU.md`](./docs/TG_POST_RU.md)
+
 ### Поддержка и обратная связь
 - GitHub Issues: [создать обращение](https://github.com/Gfermoto/hass-PVU/issues)
 - Telegram каналы:

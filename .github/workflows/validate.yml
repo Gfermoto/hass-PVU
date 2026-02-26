@@ -1,0 +1,49 @@
+name: Validate
+
+on:
+  push:
+    paths:
+      - "**/*.md"
+      - "**/*.yaml"
+      - "**/*.yml"
+      - ".github/workflows/**"
+  pull_request:
+    paths:
+      - "**/*.md"
+      - "**/*.yaml"
+      - "**/*.yml"
+      - ".github/workflows/**"
+
+jobs:
+  markdownlint:
+    name: Markdown lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: DavidAnson/markdownlint-cli2-action@v16
+        with:
+          globs: |
+            **/*.md
+
+  yamllint:
+    name: YAML lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ibiqlik/action-yamllint@v3
+        with:
+          file_or_dir: .
+          config_data: |
+            extends: default
+            yaml-files:
+              - "*.yaml"
+              - "*.yml"
+              - ".github/**/*.yml"
+              - ".github/**/*.yaml"
+            custom-tags:
+              - "!input"
+            rules:
+              line-length: disable
+              document-start: disable
+              truthy: disable
+              comments-indentation: disable

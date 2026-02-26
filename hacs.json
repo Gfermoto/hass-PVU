@@ -1,0 +1,7 @@
+{
+  "name": "hass-PVU",
+  "content_in_root": true,
+  "render_readme": true,
+  "country": "RU",
+  "homeassistant": "2023.12.0"
+}

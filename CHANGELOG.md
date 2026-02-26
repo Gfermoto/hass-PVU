@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.3.2
+
+- Добавлена инфраструктура качества и сопровождения:
+  - `CONTRIBUTING.md` с правилами внесения изменений;
+  - шаблоны issues (`bug_report`, `feature_request`) и конфиг issue-трекера;
+  - `docs/RELEASE_CHECKLIST.md` для проверки перед релизами;
+  - CI workflow `validate.yml` (Markdown/YAML lint).
+- Добавлен `hacs.json` для подготовки репозитория к HACS-потоку.
+- В `README.md` добавлен раздел «Разработка и качество» со ссылками на процессы и проверки.
+
 ## v0.3.1
 
 - Для develop-версии `pvu.yaml` все `input sections` переведены в `collapsed: true` по умолчанию.
