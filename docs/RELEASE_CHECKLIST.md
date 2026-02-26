@@ -8,10 +8,13 @@
 - [ ] Проверены оба файла: `pvu_min.yaml` и `pvu.yaml`.
 - [ ] Проверены значения в `select.options` (строковые `off`, `maintain` и т.д.).
 - [ ] Проверены `supported_hvac_modes` / `supported_fan_modes` проверки.
+- [ ] Проверены оба формата атрибутов режимов: список и строковое представление списка/enum.
+- [ ] В `debug_mode` видны причины `apply/unsupported/already_set/min_interval_hold` для HVAC и FAN.
 
 ## 2) Сценарии smoke-test
 
 - [ ] Базовый сценарий: только обязательные датчики (`temp_indoor`, `humidity_indoor`).
+- [ ] Критичный сценарий: `away=off` -> снятие охраны -> возврат в `heat`/рабочий режим проходит корректно.
 - [ ] `away_behavior=maintain` корректно держит `temp_away`.
 - [ ] `away_behavior=off` корректно выключает установку.
 - [ ] Переходы day/night работают по расписанию.
