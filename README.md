@@ -237,4 +237,4 @@
   * [DIYIoT_Zone](https://t.me/DIYIoT_Zone) - Сообщество разработчиков и энтузиастов
 
 ### Лицензия
-MIT License
+[MIT License](./LICENSE)
