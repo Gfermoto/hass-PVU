@@ -17,6 +17,7 @@
 - [ ] Критичный сценарий: `away=off` -> снятие охраны -> возврат в `heat`/рабочий режим проходит корректно.
 - [ ] `away_behavior=maintain` корректно держит `temp_away`.
 - [ ] `away_behavior=off` корректно выключает установку.
+- [ ] Интеграционный кейс: `away=off -> disarmed -> armed_away` в интервале `< hvac_min_switch_minutes` проверен на реальном устройстве.
 - [ ] Переходы day/night работают по расписанию.
 - [ ] Включение/выключение усиления по влажности.
 - [ ] Реакция на CO2/PM2.5/VOC/NOx (если датчики подключены).
@@ -36,6 +37,7 @@
 - [ ] Антизаморозка: `fan_only` блокируется ниже `outdoor_vent_min`.
 - [ ] Для develop: `outdoor_temp_policy=conservative` блокирует `cooling/fan_only` при неизвестной улице.
 - [ ] Для develop: `debug_mode` создаёт диагностические уведомления.
+- [ ] Для develop: проверен кейс coupling (`fan_mode=off` может влиять на HVAC) с политикой `away_off_fan_policy`.
 
 ## 4) Документация
 

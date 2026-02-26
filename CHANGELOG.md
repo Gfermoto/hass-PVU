@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.5.3
+
+- Добавлены явные политики для `away_behavior=off` в `pvu.yaml`:
+  - `away_off_hvac_policy` (`respect_min_interval` / `immediate`) — управляет применением `off` относительно anti-flap интервала;
+  - `away_off_fan_policy` (`hvac_only` / `follow_fan_mode`) — защищает от неявного coupling `fan_mode=off -> HVAC off` на части устройств.
+- Усилен `debug_mode`: добавлен `command_verify_delay_sec` и post-check верификация после `climate.set_hvac_mode` / `climate.set_fan_mode` с уведомлением, если фактический state не совпал с целевым.
+- Обновлены `README.md` и `docs/FAQ.md` с формальной спецификацией нового поведения `away=off` и диагностикой coupling-кейсов.
+- Обновлён `docs/RELEASE_CHECKLIST.md`: добавлены обязательные интеграционные проверки `away=off -> disarmed -> armed_away` и отдельный пункт по device coupling.
+
 ## v0.5.2
 
 - Hotfix совместимости шаблонов Home Assistant: из `pvu.yaml` удалён фильтр `split`, который вызывал ошибку `No filter named 'split'` и блокировал сохранение автоматизации.
