@@ -269,6 +269,7 @@
 
 - Руководство для контрибьюторов: [`CONTRIBUTING.md`](./CONTRIBUTING.md)
 - Релизный чеклист: [`docs/RELEASE_CHECKLIST.md`](./docs/RELEASE_CHECKLIST.md)
+- Дорожная карта: [`docs/ROADMAP.md`](./docs/ROADMAP.md)
 - Шаблоны issues: [`.github/ISSUE_TEMPLATE`](./.github/ISSUE_TEMPLATE)
 - Базовая CI-валидация (Markdown/YAML): [`.github/workflows/validate.yml`](./.github/workflows/validate.yml)
 - Материал для статьи: [`docs/ARTICLE_RU.md`](./docs/ARTICLE_RU.md)
