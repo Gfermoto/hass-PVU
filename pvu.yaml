@@ -922,30 +922,31 @@ action:
     hvac_apply_reason: "{% set desired = (desired_hvac_mode | trim | lower) %}\n{% set current
       = (current_hvac_mode | string | lower) %}\n{% set modes_raw = state_attr(turkov_climate,
       'hvac_modes') | default([], true) %}\n{% if modes_raw is iterable and modes_raw
-      is not string %}\n  {% set modes_text = (modes_raw | map('string') | join(' '))
-      | lower %}\n{% else %}\n  {% set modes_text = modes_raw | string | lower %}\n{%
-      endif %}\n{% set modes_tokens = modes_text\n  | replace('[', ' ')\n  | replace(']',
-      ' ')\n  | replace('<', ' ')\n  | replace('>', ' ')\n  | replace(':', ' ')\n
-      | replace(',', ' ')\n  | replace('''', ' ')\n  | replace('\"', ' ')\n  | replace('(',
-      ' ')\n  | replace(')', ' ')\n  | split(' ')\n  | reject('equalto', '')\n  | list
-      %}\n{% set supported = desired in modes_tokens %}\n{% if not climate_available
-      %}\n  climate_unavailable\n{% elif desired | length == 0 %}\n  desired_empty\n{%
-      elif desired == current %}\n  already_set\n{% elif not (hvac_switch_allowed | bool)
-      %}\n  min_interval_hold\n{% elif not supported %}\n  unsupported_mode\n{% else
-      %}\n  apply\n{% endif %}\n"
+      is not string %}\n  {% set modes_norm = modes_raw | map('string') | map('lower')
+      | list %}\n  {% set modes_joined = modes_norm | join(' ') %}\n{% else %}\n  {%
+      set modes_norm = [] %}\n  {% set modes_joined = modes_raw | string | lower %}\n{%
+      endif %}\n{% set supported = (desired in modes_norm)\n  or ((\"'\" ~ desired ~ \"'\")
+      in modes_joined)\n  or ((\"\\\"\" ~ desired ~ \"\\\"\") in modes_joined)\n  or
+      ((\"<\" ~ desired ~ \">\") in modes_joined)\n  or ((\" \" ~ desired ~ \" \") in
+      (\" \" ~ modes_joined ~ \" \"))\n  or ((desired ~ \",\") in modes_joined)\n  or
+      ((\",\" ~ desired) in modes_joined) %}\n{% if not climate_available %}\n  climate_unavailable\n{%
+      elif desired | length == 0 %}\n  desired_empty\n{% elif desired == current %}\n
+      already_set\n{% elif not (hvac_switch_allowed | bool) %}\n  min_interval_hold\n{%
+      elif not supported %}\n  unsupported_mode\n{% else %}\n  apply\n{% endif %}\n"
     fan_apply_reason: "{% set desired = (desired_fan_mode | trim | lower) %}\n{% set current
       = (current_fan_mode | string | lower) %}\n{% set modes_raw = state_attr(turkov_climate,
       'fan_modes') | default([], true) %}\n{% if modes_raw is iterable and modes_raw
-      is not string %}\n  {% set modes_text = (modes_raw | map('string') | join(' '))
-      | lower %}\n{% else %}\n  {% set modes_text = modes_raw | string | lower %}\n{%
-      endif %}\n{% set modes_tokens = modes_text\n  | replace('[', ' ')\n  | replace(']',
-      ' ')\n  | replace('<', ' ')\n  | replace('>', ' ')\n  | replace(':', ' ')\n
-      | replace(',', ' ')\n  | replace('''', ' ')\n  | replace('\"', ' ')\n  | replace('(',
-      ' ')\n  | replace(')', ' ')\n  | split(' ')\n  | reject('equalto', '')\n  | list
-      %}\n{% set supported = desired in modes_tokens %}\n{% if not climate_available
-      %}\n  climate_unavailable\n{% elif desired | length == 0 %}\n  desired_empty\n{%
-      elif desired == current %}\n  already_set\n{% elif not supported %}\n  unsupported_mode\n{%
-      else %}\n  apply\n{% endif %}\n"
+      is not string %}\n  {% set modes_norm = modes_raw | map('string') | map('lower')
+      | list %}\n  {% set modes_joined = modes_norm | join(' ') %}\n{% else %}\n  {%
+      set modes_norm = [] %}\n  {% set modes_joined = modes_raw | string | lower %}\n{%
+      endif %}\n{% set supported = (desired in modes_norm)\n  or ((\"'\" ~ desired ~ \"'\")
+      in modes_joined)\n  or ((\"\\\"\" ~ desired ~ \"\\\"\") in modes_joined)\n  or
+      ((\"<\" ~ desired ~ \">\") in modes_joined)\n  or ((\" \" ~ desired ~ \" \") in
+      (\" \" ~ modes_joined ~ \" \"))\n  or ((desired ~ \",\") in modes_joined)\n  or
+      ((\",\" ~ desired) in modes_joined) %}\n{% if not climate_available %}\n  climate_unavailable\n{%
+      elif desired | length == 0 %}\n  desired_empty\n{% elif desired == current %}\n
+      already_set\n{% elif not supported %}\n  unsupported_mode\n{% else %}\n  apply\n{%
+      endif %}\n"
     debug_enabled: '{{ debug_mode | bool }}'
     debug_need_notify: '{{ debug_enabled and (outdoor_unknown_limited or (not climate_available)
       or ((hvac_apply_reason | trim) != ''already_set'' and (hvac_apply_reason | trim)
