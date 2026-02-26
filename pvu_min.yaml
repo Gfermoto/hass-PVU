@@ -280,6 +280,17 @@ blueprint:
           max: 20.0
           step: 1.0
           mode: box
+    outdoor_temp_policy:
+      name: '🛡️ Если t снаружи неизвестна'
+      default: conservative
+      description: 'conservative: запрещать cooling/fan_only без датчика улицы; permissive: разрешать по умолчанию.'
+      selector:
+        select:
+          options:
+          - label: conservative (безопасно)
+            value: conservative
+          - label: permissive (разрешать)
+            value: permissive
     humidity_high:
       name: '🎚️ Влажность: включить усиление (%)'
       default: 70
@@ -571,6 +582,7 @@ action:
     temp_hysteresis_off: !input temp_hysteresis_off
     outdoor_cool_min: !input outdoor_cool_min
     outdoor_vent_min: !input outdoor_vent_min
+    outdoor_temp_policy: !input outdoor_temp_policy
     humidity_high: !input humidity_high
     humidity_low: !input humidity_low
     co2_high: !input co2_high
@@ -646,75 +658,103 @@ action:
       \ {{ temp_day | float }}\n{% else %}\n  {{ temp_night | float }}\n{% endif %}\n"
     # === ТЕМПЕРАТУРА ===
     temp_in_entity: '{{ temp_indoor | string }}'
+    temp_in_raw: '{{ states(temp_in_entity) | float(0) }}'
+    temp_in_plausible: '{{ temp_in_raw >= 5 and temp_in_raw <= 40 }}'
     temp_in_valid: '{{ states(temp_in_entity) not in [''unknown'', ''unavailable'',
-      ''none'', ''None'', ''''] }}'
-    temp_in: '{{ states(temp_in_entity) | float(0) }}'
+      ''none'', ''None'', ''''] and temp_in_plausible }}'
+    temp_in: '{{ temp_in_raw }}'
     temp_out_entity: '{{ temp_outdoor | default('''', true) | string }}'
+    temp_out_raw: '{{ states(temp_out_entity) | float(0) }}'
+    temp_out_plausible: '{{ temp_out_raw >= -50 and temp_out_raw <= 50 }}'
     temp_out_valid: '{{ ''.'' in temp_out_entity and states(temp_out_entity) not in
-      [''unknown'', ''unavailable'', ''none'', ''None'', ''''] }}'
-    temp_out: '{{ states(temp_out_entity) | float(0) }}'
-    cool_allowed: '{{ (not temp_out_valid) or (temp_out > outdoor_cool_min | float)
+      [''unknown'', ''unavailable'', ''none'', ''None'', ''''] and temp_out_plausible
       }}'
-    vent_allowed: '{{ (not temp_out_valid) or (temp_out > outdoor_vent_min | float)
-      }}'
+    temp_out: '{{ temp_out_raw }}'
+    outdoor_unknown_allows: '{{ (outdoor_temp_policy | string) != ''conservative'' }}'
+    cool_allowed: '{{ (temp_out_valid and temp_out > outdoor_cool_min | float) or ((not
+      temp_out_valid) and outdoor_unknown_allows) }}'
+    vent_allowed: '{{ (temp_out_valid and temp_out > outdoor_vent_min | float) or ((not
+      temp_out_valid) and outdoor_unknown_allows) }}'
     # === ВЛАЖНОСТЬ ===
     humidity_entity: '{{ humidity_indoor | string }}'
+    humidity_raw: '{{ states(humidity_entity) | float(0) }}'
+    humidity_plausible: '{{ humidity_raw >= 1 and humidity_raw <= 100 }}'
     humidity_active: '{{ states(humidity_entity) not in [''unknown'', ''unavailable'',
-      ''none'', ''None'', ''''] }}'
-    humidity_value: '{{ states(humidity_entity) | float(0) }}'
+      ''none'', ''None'', ''''] and humidity_plausible }}'
+    humidity_value: '{{ humidity_raw }}'
     humidity_boost: '{{ humidity_active and humidity_value >= (humidity_high | float)
       }}'
     humidity_clear: '{{ (not humidity_active) or humidity_value <= (humidity_low |
       float) }}'
     # === КАЧЕСТВО ВОЗДУХА (ВНУТРИ) ===
     co2_entity: '{{ co2_sensor | default('''', true) | string }}'
+    co2_raw: '{{ states(co2_entity) | float(0) }}'
+    co2_plausible: '{{ co2_raw >= 300 and co2_raw <= 5000 }}'
     co2_active: '{{ ''.'' in co2_entity and states(co2_entity) not in [''unknown'',
-      ''unavailable'', ''none'', ''None'', ''''] }}'
-    co2_value: '{{ states(co2_entity) | float(0) }}'
+      ''unavailable'', ''none'', ''None'', ''''] and co2_plausible }}'
+    co2_value: '{{ co2_raw }}'
     co2_boost: '{{ co2_active and co2_value >= (co2_high | float) }}'
     co2_clear: '{{ (not co2_active) or co2_value <= (co2_low | float) }}'
     pm25_entity: '{{ pm25_sensor | default('''', true) | string }}'
+    pm25_raw: '{{ states(pm25_entity) | float(0) }}'
+    pm25_plausible: '{{ pm25_raw >= 0 and pm25_raw <= 500 }}'
     pm25_active: '{{ ''.'' in pm25_entity and states(pm25_entity) not in [''unknown'',
-      ''unavailable'', ''none'', ''None'', ''''] }}'
-    pm25_value: '{{ states(pm25_entity) | float(0) }}'
+      ''unavailable'', ''none'', ''None'', ''''] and pm25_plausible }}'
+    pm25_value: '{{ pm25_raw }}'
     pm25_boost: '{{ pm25_active and pm25_value >= (pm25_high | float) }}'
     pm25_clear: '{{ (not pm25_active) or pm25_value <= (pm25_low | float) }}'
     pm25_outdoor_entity: '{{ pm25_outdoor_sensor | default('''', true) | string }}'
+    pm25_outdoor_raw: '{{ states(pm25_outdoor_entity) | float(0) }}'
+    pm25_outdoor_plausible: '{{ pm25_outdoor_raw >= 0 and pm25_outdoor_raw <= 500 }}'
     pm25_outdoor_active: '{{ ''.'' in pm25_outdoor_entity and states(pm25_outdoor_entity)
-      not in [''unknown'', ''unavailable'', ''none'', ''None'', ''''] }}'
-    pm25_outdoor_value: '{{ states(pm25_outdoor_entity) | float(0) }}'
+      not in [''unknown'', ''unavailable'', ''none'', ''None'', ''''] and pm25_outdoor_plausible
+      }}'
+    pm25_outdoor_value: '{{ pm25_outdoor_raw }}'
     pm25_outdoor_bad: '{{ pm25_outdoor_active and pm25_outdoor_value >= (pm25_outdoor_block
       | float) }}'
     co2_outdoor_entity: '{{ co2_outdoor_sensor | default('''', true) | string }}'
+    co2_outdoor_raw: '{{ states(co2_outdoor_entity) | float(0) }}'
+    co2_outdoor_plausible: '{{ co2_outdoor_raw >= 300 and co2_outdoor_raw <= 5000 }}'
     co2_outdoor_active: '{{ ''.'' in co2_outdoor_entity and states(co2_outdoor_entity)
-      not in [''unknown'', ''unavailable'', ''none'', ''None'', ''''] }}'
-    co2_outdoor_value: '{{ states(co2_outdoor_entity) | float(0) }}'
+      not in [''unknown'', ''unavailable'', ''none'', ''None'', ''''] and co2_outdoor_plausible
+      }}'
+    co2_outdoor_value: '{{ co2_outdoor_raw }}'
     co2_outdoor_bad: '{{ co2_outdoor_active and co2_outdoor_value >= (co2_outdoor_block
       | float) }}'
     voc_entity: '{{ voc_sensor | default('''', true) | string }}'
+    voc_raw: '{{ states(voc_entity) | float(0) }}'
+    voc_plausible: '{{ voc_raw >= 1 and voc_raw <= 5000 }}'
     voc_active: '{{ ''.'' in voc_entity and states(voc_entity) not in [''unknown'',
-      ''unavailable'', ''none'', ''None'', ''''] }}'
-    voc_value: '{{ states(voc_entity) | float(0) }}'
+      ''unavailable'', ''none'', ''None'', ''''] and voc_plausible }}'
+    voc_value: '{{ voc_raw }}'
     voc_boost: '{{ voc_active and voc_value >= (voc_high | float) }}'
     voc_clear: '{{ (not voc_active) or voc_value <= (voc_low | float) }}'
     voc_outdoor_entity: '{{ voc_outdoor_sensor | default('''', true) | string }}'
+    voc_outdoor_raw: '{{ states(voc_outdoor_entity) | float(0) }}'
+    voc_outdoor_plausible: '{{ voc_outdoor_raw >= 1 and voc_outdoor_raw <= 5000 }}'
     voc_outdoor_active: '{{ ''.'' in voc_outdoor_entity and states(voc_outdoor_entity)
-      not in [''unknown'', ''unavailable'', ''none'', ''None'', ''''] }}'
-    voc_outdoor_value: '{{ states(voc_outdoor_entity) | float(0) }}'
+      not in [''unknown'', ''unavailable'', ''none'', ''None'', ''''] and voc_outdoor_plausible
+      }}'
+    voc_outdoor_value: '{{ voc_outdoor_raw }}'
     voc_outdoor_bad: '{{ voc_outdoor_active and voc_outdoor_value >= (voc_outdoor_block
       | float) }}'
     no_entity: '{{ no_sensor | default('''', true) | string }}'
+    no_raw: '{{ states(no_entity) | float(0) }}'
+    no_plausible: '{{ no_raw >= 1 and no_raw <= 500 }}'
     no_active: '{{ ''.'' in no_entity and states(no_entity) not in [''unknown'', ''unavailable'',
-      ''none'', ''None'', ''''] }}'
-    no_value: '{{ states(no_entity) | float(0) }}'
+      ''none'', ''None'', ''''] and no_plausible }}'
+    no_value: '{{ no_raw }}'
     no_boost: '{{ no_active and no_value >= (no_high | float) }}'
     no_clear: '{{ (not no_active) or no_value <= (no_low | float) }}'
     # === КАЧЕСТВО ВОЗДУХА (СНАРУЖИ) ===
     # Эти параметры не "включают усиление", а ограничивают его.
     no_outdoor_entity: '{{ no_outdoor_sensor | default('''', true) | string }}'
+    no_outdoor_raw: '{{ states(no_outdoor_entity) | float(0) }}'
+    no_outdoor_plausible: '{{ no_outdoor_raw >= 1 and no_outdoor_raw <= 500 }}'
     no_outdoor_active: '{{ ''.'' in no_outdoor_entity and states(no_outdoor_entity)
-      not in [''unknown'', ''unavailable'', ''none'', ''None'', ''''] }}'
-    no_outdoor_value: '{{ states(no_outdoor_entity) | float(0) }}'
+      not in [''unknown'', ''unavailable'', ''none'', ''None'', ''''] and no_outdoor_plausible
+      }}'
+    no_outdoor_value: '{{ no_outdoor_raw }}'
     no_outdoor_bad: '{{ no_outdoor_active and no_outdoor_value >= (no_outdoor_block
       | float) }}'
     any_air_boost: '{{ co2_boost or pm25_boost or voc_boost or no_boost }}'
@@ -766,7 +806,8 @@ action:
         temperature: '{{ target_temp | float }}'
   default: []
 - choose:
-  # Шаг 1: применяем HVAC только если режим действительно меняется.
+  # Шаг 1: применяем HVAC только если режим действительно меняется
+  # и поддерживается устройством. Если не поддерживается — сохраняем текущий режим.
   - conditions: "{% set desired = (desired_hvac_mode | trim | lower) %}\n{% set current
       = (current_hvac_mode | string | lower) %}\n{% set modes = supported_hvac_modes
       | default([], true) %}\n{% set modes_lc = (modes | map('string') | map('lower')
@@ -781,7 +822,8 @@ action:
         hvac_mode: '{{ desired_hvac_mode | trim }}'
   default: []
 - choose:
-  # Шаг 2: применяем fan_mode только если режим действительно меняется.
+  # Шаг 2: применяем fan_mode только если режим действительно меняется
+  # и поддерживается устройством. Если не поддерживается — сохраняем текущий режим.
   - conditions: "{% set desired = (desired_fan_mode | trim | lower) %}\n{% set current
       = (current_fan_mode | string | lower) %}\n{% set modes = supported_fan_modes
       | default([], true) %}\n{% set modes_lc = (modes | map('string') | map('lower')

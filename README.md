@@ -181,6 +181,12 @@
    - Отдельным шагом применяется уставка `climate.set_temperature` для режима поддержания.
    - Реакция на изменение датчиков (включая опциональные) и presence — по их изменению, плюс периодический пересчет каждые 2 минуты.
 
+   **Edge-cases и безопасное поведение**:
+   - при `climate: unavailable` сервисные вызовы не отправляются;
+   - при `unknown/unavailable` у датчиков используется fail-safe поведение без падения логики;
+   - нереалистичные выбросы датчиков фильтруются и не участвуют в принятии решений;
+   - если рассчитанный режим не поддерживается устройством, автоматика сохраняет текущий режим.
+
    **Важно про VOC/NOx в AirGradient**:
    - Это индексы (обычно шкала 1–500), а не абсолютные концентрации газов.
    - NOx Index часто близок к 1 в «чистом» фоне; рост выше 1 означает ухудшение относительно базовой линии.
@@ -270,6 +276,7 @@
 - Руководство для контрибьюторов: [`CONTRIBUTING.md`](./CONTRIBUTING.md)
 - Релизный чеклист: [`docs/RELEASE_CHECKLIST.md`](./docs/RELEASE_CHECKLIST.md)
 - Дорожная карта: [`docs/ROADMAP.md`](./docs/ROADMAP.md)
+- FAQ: [`docs/FAQ.md`](./docs/FAQ.md)
 - Шаблоны issues: [`.github/ISSUE_TEMPLATE`](./.github/ISSUE_TEMPLATE)
 - Базовая CI-валидация (Markdown/YAML): [`.github/workflows/validate.yml`](./.github/workflows/validate.yml)
 - Материал для статьи: [`docs/ARTICLE_RU.md`](./docs/ARTICLE_RU.md)
