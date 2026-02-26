@@ -24,7 +24,7 @@ blueprint:
     section_entities:
       name: '🎛️ Сущности и датчики'
       icon: mdi:home-thermometer-outline
-      collapsed: false
+      collapsed: true
       input:
         turkov_climate:
           name: 🎛️ ПВУ Turkov (climate)
@@ -160,7 +160,7 @@ blueprint:
     section_presence_schedule:
       name: '👥 Присутствие и расписание'
       icon: mdi:account-clock-outline
-      collapsed: false
+      collapsed: true
       input:
         presence_home:
           name: 👥 Источник присутствия (опционально)
@@ -226,7 +226,7 @@ blueprint:
     section_temperature_safety:
       name: '🌡️ Температура и защита'
       icon: mdi:thermometer-chevron-up
-      collapsed: false
+      collapsed: true
       input:
         temp_day:
           name: 🌞 Целевая температура днем (°C)
