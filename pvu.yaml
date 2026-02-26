@@ -567,6 +567,8 @@ action:
     # - custom: состояние presence_away_state = нет дома
     # - auto: безопасная эвристика по типовым состояниям
     presence_entity: '{{ presence_home | default('''', true) | string }}'
+    presence_domain: '{{ presence_entity.split(''.'')[0] if ''.'' in presence_entity
+      else '''' }}'
     presence_state: '{{ states(presence_entity) if ''.'' in presence_entity else '''' }}'
     is_away: >
       {% if '.' not in presence_entity %}
@@ -576,7 +578,11 @@ action:
       {% elif presence_mode == 'person_group' %}
         {{ is_state(presence_entity, 'not_home') }}
       {% elif presence_mode == 'alarm' %}
-        {{ is_state(presence_entity, 'armed_away') or is_state(presence_entity, 'armed_vacation') or is_state(presence_entity, 'triggered') }}
+        {% if presence_domain == 'alarm_control_panel' %}
+          {{ is_state(presence_entity, 'armed_away') or is_state(presence_entity, 'armed_vacation') or is_state(presence_entity, 'triggered') }}
+        {% else %}
+          {{ is_state(presence_entity, 'not_home') or is_state(presence_entity, 'off') }}
+        {% endif %}
       {% elif presence_mode == 'custom' %}
         {% set away_state = (presence_away_state | string | trim) %}
         {{ away_state != '' and presence_state == away_state }}
@@ -674,6 +680,8 @@ action:
     current_hvac_mode: '{{ states(turkov_climate) | string }}'
     current_fan_mode: '{{ state_attr(turkov_climate, ''fan_mode'') | default('''',
       true) | string }}'
+    current_target_temp: '{{ state_attr(turkov_climate, ''temperature'') | float(999)
+      }}'
     supported_hvac_modes: '{{ state_attr(turkov_climate, ''hvac_modes'') | default([],
       true) }}'
     supported_fan_modes: '{{ state_attr(turkov_climate, ''fan_modes'') | default([],
@@ -696,6 +704,18 @@ action:
     # 4) Если внутри умеренно плохо (1 триггер) -> medium
     # 5) Если всё чисто -> low
     desired_fan_mode: "{% set boost_count = air_boost_count | int(0) %}\n{% if is_away_bool and away_behavior == 'off' %}\n  off\n{% elif outdoor_air_bad and boost_count >= 1 %}\n  {{ fan_mode_medium | string }}\n{% elif outdoor_air_bad %}\n  {{ fan_mode_low | string }}\n{% elif boost_count >= 2 %}\n  {{ fan_mode_high | string }}\n{% elif boost_count == 1 %}\n  {{ fan_mode_medium | string }}\n{% elif all_air_clear and humidity_clear %}\n  {{ fan_mode_low | string }}\n{% else %}\n  {{ '' }}\n{% endif %}\n"
+- choose:
+  # Шаг 0: применяем целевую уставку температуры (режим поддержания), если она изменилась.
+  - conditions: '{{ not (is_away_bool and away_behavior == ''off'') and (target_temp
+      | float(0)) > 0 and ((current_target_temp - (target_temp | float)) | abs >
+      0.2) }}'
+    sequence:
+    - service: climate.set_temperature
+      target:
+        entity_id: !input turkov_climate
+      data:
+        temperature: '{{ target_temp | float }}'
+  default: []
 - choose:
   # Шаг 1: применяем HVAC только если режим действительно меняется.
   - conditions: '{{ (desired_hvac_mode | trim) | length > 0 and (desired_hvac_mode
