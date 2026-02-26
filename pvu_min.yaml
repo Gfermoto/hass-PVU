@@ -1,5 +1,5 @@
 blueprint:
-  name: '🌬️ Turkov AirFlow: умный климат и воздух'
+  name: '🌬️ Turkov AirFlow MIN: стабильная база'
   author: Gfermoto
   homeassistant:
     min_version: '2023.12.0'
@@ -516,7 +516,7 @@ blueprint:
             value: fan_only
           - label: 'off'
             value: 'off'
-  source_url: https://github.com/Gfermoto/hass-PVU/blob/main/pvu.yaml
+  source_url: https://github.com/Gfermoto/hass-PVU/blob/main/pvu_min.yaml
 trigger:
 # Пересчёт каждые 2 минуты + при изменении ключевых/опциональных датчиков.
 - platform: time_pattern
