@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.5.0
+
+- Реализован Этап 3 из `docs/ROADMAP.md`.
+- В `pvu.yaml` добавлены профили климата `climate_profile` (`continental`/`mild`/`cold`) с адаптацией температурной стратегии, гистерезиса и outdoor-ограничений.
+- В `pvu.yaml` добавлены профили жилья `home_profile` (`apartment`/`house`/`office`) с адаптацией чувствительности порогов IAQ и влажности.
+- Дефолты смещены под загородный дом в климате МО: `home_profile=house`, `climate_profile=continental`, `temp_hysteresis_on/off=1.2/0.6`, `outdoor_cool_min=20`, `outdoor_vent_min=3`.
+- Расширена диагностика `debug_mode`: вывод активных профилей и эффективных порогов.
+- В `docs/RELEASE_CHECKLIST.md` добавлены обязательные сезонные smoke-test сценарии (`зима`/`межсезонье`/`лето`) как регулярная практика.
+
 ## v0.4.2
 
 - Закрыт Этап 2 из `docs/ROADMAP.md` полностью.

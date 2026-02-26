@@ -14,6 +14,7 @@
   - `temp_hysteresis_on/off`;
   - `outdoor_temp_policy`;
   - `hvac_min_switch_minutes`.
+  - `climate_profile` и `home_profile` (меняйте только после завершения базовой калибровки).
 
 ## 2) Сбор данных (дни 1-3)
 
