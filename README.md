@@ -114,6 +114,15 @@
   - `hvac_only` (по умолчанию): не отправлять `fan_mode=off` (защита от coupling fan->HVAC на некоторых устройствах);
   - `follow_fan_mode`: отправлять `fan_mode=off` вместе с `away=off`.
 
+Короткая policy matrix для `away=off`:
+
+| `away_off_hvac_policy` | `away_off_fan_policy` | Поведение |
+| --- | --- | --- |
+| `respect_min_interval` | `hvac_only` | HVAC перейдёт в `off` после anti-flap окна; `fan_mode` отдельно не форсируется. |
+| `respect_min_interval` | `follow_fan_mode` | HVAC перейдёт в `off` после anti-flap окна; дополнительно отправляется `fan_mode=off`. |
+| `immediate` | `hvac_only` | HVAC уходит в `off` сразу; `fan_mode` отдельно не форсируется. |
+| `immediate` | `follow_fan_mode` | HVAC уходит в `off` сразу; дополнительно отправляется `fan_mode=off`. |
+
 #### 6. Fail-safe логика применения команд
 - Перед вызовами `climate.set_hvac_mode` / `climate.set_fan_mode` проверяется:
   - целевой режим не пустой;
@@ -124,6 +133,7 @@
 - Для устройств с аппаратной связкой fan/HVAC добавлена политика `away_off_fan_policy`, чтобы избежать неявного выключения HVAC через `fan_mode=off`.
 - Это защищает от ошибок на устройствах с неполным набором режимов.
 - Дополнительно проверяется доступность `climate`-сущности (`unavailable/unknown` не допускаются к сервис-вызовам).
+- Важно: применение `cool` / `fan_only` в реальной установке может быть ограничено самим устройством, прошивкой, режимом сезона или внутренними защитами интеграции. Если команда отправлена, но режим не сменился, это не всегда ошибка blueprint.
 
 #### 7. Диагностика (develop-ветка)
 - Параметр `debug_mode` включает диагностические `persistent_notification`.

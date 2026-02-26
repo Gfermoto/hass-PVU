@@ -8,6 +8,7 @@
 - Усилен `debug_mode`: добавлен `command_verify_delay_sec` и post-check верификация после `climate.set_hvac_mode` / `climate.set_fan_mode` с уведомлением, если фактический state не совпал с целевым.
 - Обновлены `README.md` и `docs/FAQ.md` с формальной спецификацией нового поведения `away=off` и диагностикой coupling-кейсов.
 - Обновлён `docs/RELEASE_CHECKLIST.md`: добавлены обязательные интеграционные проверки `away=off -> disarmed -> armed_away` и отдельный пункт по device coupling.
+- Полевой beta-test подтвердил pass по критичным сценариям (`home/away`, anti-flap, day/night); отдельно зафиксировано, что `cool/fan_only` могут ограничиваться устройством/интеграцией в зимних условиях.
 
 ## v0.5.2
 
