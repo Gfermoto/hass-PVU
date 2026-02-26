@@ -54,7 +54,7 @@
 Используйте правильно:
 
 - для **целого дашборда**: `airflow_dashboard.yaml` или `airflow_dashboard_min.yaml` (через "Редактировать в YAML");
-- для **Manual card**: `airflow_dashboard_card.yaml` или `airflow_dashboard_min_card.yaml`.
+- для **Manual card**: `airflow_card.yaml` или `airflow_card_min.yaml`.
 
 ## Как закрыть верификацию порогов не "на глаз", а по метрикам?
 

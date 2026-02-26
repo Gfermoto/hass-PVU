@@ -70,8 +70,8 @@
 
 - [`airflow_dashboard.yaml`](../airflow_dashboard.yaml)
 - [`airflow_dashboard_min.yaml`](../airflow_dashboard_min.yaml)
-- [`airflow_dashboard_card.yaml`](../airflow_dashboard_card.yaml) (для `Manual card`)
-- [`airflow_dashboard_min_card.yaml`](../airflow_dashboard_min_card.yaml) (для `Manual card`)
+- [`airflow_card.yaml`](../airflow_card.yaml) (для `Manual card`)
+- [`airflow_card_min.yaml`](../airflow_card_min.yaml) (для `Manual card`)
 - [`airflow_kpi_package.yaml`](../airflow_kpi_package.yaml) (KPI-верификация порогов)
 
 Как применить:
@@ -84,7 +84,7 @@
 Если хотите вставить не целый дашборд, а одну карточку в существующую панель:
 
 1. Откройте **Добавить карточку -> Manual card**.
-2. Используйте `airflow_dashboard_card.yaml` или `airflow_dashboard_min_card.yaml`.
+2. Используйте `airflow_card.yaml` или `airflow_card_min.yaml`.
 3. Не вставляйте туда `airflow_dashboard.yaml`/`airflow_dashboard_min.yaml`, иначе получите ошибку `No card type configured`.
 
 ## 7) KPI-пакет для закрытия верификации
