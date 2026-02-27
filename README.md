@@ -324,8 +324,6 @@
 - FAQ: [`docs/FAQ.md`](./docs/FAQ.md)
 - Шаблоны issues: [`.github/ISSUE_TEMPLATE`](./.github/ISSUE_TEMPLATE)
 - Базовая CI-валидация (Markdown/YAML): [`.github/workflows/validate.yml`](./.github/workflows/validate.yml)
-- Материал для статьи: [`docs/ARTICLE_RU.md`](./docs/ARTICLE_RU.md)
-- Короткий анонс для Telegram: [`docs/TG_POST_RU.md`](./docs/TG_POST_RU.md)
 
 ### Импорт Lovelace без ошибок
 
