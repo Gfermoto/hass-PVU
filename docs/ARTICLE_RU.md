@@ -100,7 +100,7 @@
 
 Кроме blueprint в репо лежат готовые куски для визуализации и аналитики: дашборды (`airflow_dashboard.yaml`, `airflow_dashboard_min.yaml`), карточки для Manual card (`airflow_card.yaml`, `airflow_card_min.yaml`) и KPI-пакет (`airflow_kpi_package.yaml`) — с его помощью можно смотреть, какую долю времени показатели CO2/PM2.5/VOC/NOx держались в целевой зоне. Всё опционально, blueprint работает и без них.
 
-**[Здесь будет: скриншот дашборда или KPI-карточки (по желанию — график по времени в зоне)]**
+![Статистика режимов климата и CO₂ за 72 часа](images/screenshots/turkov_stat.png)
 
 ### 4) Политики в режиме отсутствия и защита от coupling
 
