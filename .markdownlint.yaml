@@ -1,5 +1,5 @@
-# Отключить ограничение длины строки для CHANGELOG (списки с длинными пунктами)
+# Ограничения, отключённые для удобства (changelog, шаблоны)
 default: true
-
 rules:
-  MD013: false
+  MD013: false   # line length — длинные пункты в CHANGELOG и шаблонах
+  MD041: false   # first line heading — в шаблонах PR первым идёт ##

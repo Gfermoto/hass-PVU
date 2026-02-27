@@ -24,6 +24,7 @@ jobs:
         with:
           globs: |
             **/*.md
+          configFile: .markdownlint.yaml
 
   yamllint:
     name: YAML lint
