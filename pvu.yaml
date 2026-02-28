@@ -1020,8 +1020,8 @@ action:
       | string }}\n{% elif humidity_clear and temp_in_valid and temp_in >= (target_temp
       | float - temp_hysteresis_off_eff | float) and temp_in <= (target_temp | float
       + temp_hysteresis_off_eff | float) and (not vent_allowed) %}\n  {{ hvac_mode_heat
-      | string }}\n{% else
-      %}\n  {{ '' }}\n{% endif %}\n"
+      | string }}\n{% elif not vent_allowed %}\n  {{ hvac_mode_heat | string }}\n{%
+      else %}\n  {{ '' }}\n{% endif %}\n"
     # Логика вентилятора (3 ступени + плавный спад):
     # 1) Если никого нет и выбран away=off:
     #    - follow_fan_mode -> отправляем off

@@ -782,8 +782,8 @@ action:
       | string }}\n{% elif humidity_clear and temp_in_valid and temp_in >= (target_temp
       | float - temp_hysteresis_off | float) and temp_in <= (target_temp | float +
       temp_hysteresis_off | float) and (not vent_allowed) %}\n  {{ hvac_mode_heat
-      | string }}\n{% else
-      %}\n  {{ '' }}\n{% endif %}\n"
+      | string }}\n{% elif not vent_allowed %}\n  {{ hvac_mode_heat | string }}\n{%
+      else %}\n  {{ '' }}\n{% endif %}\n"
     # Логика вентилятора (3 ступени):
     # 1) Если никого нет и выбран away=off -> не трогаем fan_mode (hvac_only, защита от coupling fan->HVAC).
     #    HVAC=off уже отправлен на предыдущем шаге; отдельный fan_mode=off может вызвать
