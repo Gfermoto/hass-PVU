@@ -365,6 +365,7 @@ Blueprint для автоматизации приточно-вытяжной у
 
 ### Разработка и качество
 
+- Алгоритм и схемы логики: [`docs/LOGIC.md`](./docs/LOGIC.md)
 - Руководство для контрибьюторов: [`CONTRIBUTING.md`](./CONTRIBUTING.md)
 - Релизный чеклист: [`docs/RELEASE_CHECKLIST.md`](./docs/RELEASE_CHECKLIST.md)
 - Дорожная карта: [`docs/ROADMAP.md`](./docs/ROADMAP.md)
