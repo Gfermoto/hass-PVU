@@ -1065,14 +1065,16 @@ action:
       or ((hvac_apply_reason | trim) != ''already_set'' and (hvac_apply_reason | trim)
       != ''desired_empty'') or ((fan_apply_reason | trim) != ''already_set'' and (fan_apply_reason
       | trim) != ''desired_empty'')
-      or ((current_target_temp - (target_temp | float))
-      | abs > 0.2)) }}'
+      or ((current_target_temp - (target_temp | float)) | abs > 0.2
+      and (desired_hvac_mode | trim | lower) != ''off'')) }}'
     debug_message: "Blueprint: Turkov AirFlow (develop)\nclimate_available={{ climate_available }}\nclimate_profile={{ climate_profile }}\nhome_profile={{ home_profile }}\noutdoor_temp_valid={{ temp_out_valid }}\noutdoor_policy={{ outdoor_temp_policy }}\noutdoor_limited={{ outdoor_unknown_limited }}\n\nis_day={{ is_day_bool }}\nis_away={{ is_away_bool }}\naway_behavior={{ away_behavior }}\naway_off_hvac_policy={{ away_off_hvac_policy }}\naway_off_fan_policy={{ away_off_fan_policy }}\n\neco_mode={{ eco_mode_enabled | bool }}\neco_active={{ eco_active }}\neco_has_sensors={{ eco_has_active_sensors }}\neco_all_ok={{ eco_all_ok }}\neco_co2_ok={{ eco_co2_ok }}\neco_pm25_ok={{ eco_pm25_ok }}\neco_voc_ok={{ eco_voc_ok }}\neco_no_ok={{ eco_no_ok }}\neco_humidity_ok={{ eco_humidity_ok }}\n\ncurrent_hvac={{ current_hvac_mode }} -> desired_hvac={{ desired_hvac_mode | trim }}\nhvac_reason={{ hvac_apply_reason | trim }}\nhvac_min_switch_minutes={{ hvac_min_switch_minutes | float(0) }}\nhvac_elapsed_sec={{ hvac_elapsed_sec | int(0) }}\nskip_hvac_min_interval_for_off={{ skip_hvac_min_interval_for_off | bool }}\n\ncurrent_fan={{ current_fan_mode }} -> desired_fan={{ desired_fan_mode | trim }}\nfan_reason={{ fan_apply_reason | trim }}\nfan_stepdown_enabled={{ fan_stepdown_enabled | bool }}\n\ncommand_verify_delay_sec={{ command_verify_delay_sec | int(0) }}\n\ncurrent_target={{ current_target_temp }} -> target={{ target_temp | float }}\n\ncool_allowed={{ cool_allowed }}\nvent_allowed={{ vent_allowed }}\noutdoor_cool_min_eff={{ outdoor_cool_min_eff | float }}\noutdoor_vent_min_eff={{ outdoor_vent_min_eff | float }}\noutdoor_air_bad={{ outdoor_air_bad }}\nair_boost_count={{ air_boost_count | int(0) }}\n"
 - choose:
   # Шаг 0: применяем целевую уставку температуры (режим поддержания), если она изменилась.
-  - conditions: '{{ climate_available and not (is_away_bool and away_behavior == ''off'')
-      and (target_temp
-      | float(0)) > 0 and ((current_target_temp - (target_temp | float)) | abs >
+  # Пропускаем если desired_hvac=off (ECO / away=off): устройство выключено и
+  # set_temperature либо игнорируется, либо мешает; setpoint будет выставлен
+  # в первом прогоне после включения.
+  - conditions: '{{ climate_available and (desired_hvac_mode | trim | lower) != ''off''
+      and (target_temp | float(0)) > 0 and ((current_target_temp - (target_temp | float)) | abs >
       0.2) }}'
     sequence:
     - service: climate.set_temperature

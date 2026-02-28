@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.6.1
+
+- **Fix (`pvu.yaml`):** шаг 0 (`set_temperature`) теперь пропускается когда
+  `desired_hvac_mode=off` (ECO режим или `away=off`).
+  Ранее blueprint каждый прогон отправлял `climate.set_temperature` на выключенное
+  устройство — команда игнорировалась, но `current_target` не обновлялся, что
+  постоянно триггерило debug-уведомление (`|current_target - target| > 0.2`).
+  Setpoint будет выставлен в первом прогоне после включения устройства.
+- **Fix (`pvu.yaml`):** `debug_need_notify` больше не срабатывает по расхождению
+  температурной уставки когда `desired_hvac_mode=off`. Устраняет спам
+  debug-уведомлений при активном ECO режиме.
+
 ## v0.6.0
 
 - Добавлен **ECO режим** (`eco_mode_enabled`) в `pvu.yaml`:
