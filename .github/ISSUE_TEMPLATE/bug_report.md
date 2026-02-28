@@ -38,7 +38,7 @@ assignees: ''
 
 - `away_behavior`:
 - `outdoor_vent_min`:
-- `outdoor_temp_policy` (если `pvu.yaml`):
+- `outdoor_temp_policy`:
 - `fan_mode_low/medium/high`:
 - `eco_mode_enabled` (если `pvu.yaml`):
 - `away_off_hvac_policy` / `away_off_fan_policy` (если `pvu.yaml`):

@@ -71,8 +71,9 @@ jobs:
           REQUIRED_TOP = {"blueprint", "trigger", "action"}
           REQUIRED_BLUEPRINT = {"name", "domain", "author"}
           errors = []
+          blueprint_files = sorted(pathlib.Path(".").glob("pvu*.yaml"))
 
-          for path in sorted(pathlib.Path(".").glob("pvu*.yaml")):
+          for path in blueprint_files:
               with open(path) as f:
                   try:
                       doc = yaml.safe_load(f)
@@ -99,5 +100,5 @@ jobs:
               for e in errors:
                   print(f"ERROR: {e}")
               sys.exit(1)
-          print(f"OK: {len(list(pathlib.Path('.').glob('pvu*.yaml')))} blueprint file(s) passed structure check")
+          print(f"OK: {len(blueprint_files)} blueprint file(s) passed structure check")
           EOF
