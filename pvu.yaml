@@ -983,9 +983,13 @@ action:
     eco_no_ok: '{{ not no_active or no_value <= (eco_no_max | float(9999)) }}'
     eco_humidity_ok: '{{ not humidity_active or humidity_value <= (eco_humidity_max | float(9999)) }}'
     eco_all_ok: '{{ eco_co2_ok and eco_pm25_ok and eco_voc_ok and eco_no_ok and eco_humidity_ok }}'
-    # ECO требует хотя бы один активный датчик: без датчиков eco_all_ok всегда true,
-    # что привело бы к постоянному off при включённом ECO без какого-либо контроля воздуха.
-    eco_has_active_sensors: '{{ co2_active or pm25_active or voc_active or no_active or humidity_active }}'
+    # ECO требует хотя бы один сконфигурированный датчик (entity содержит '.').
+    # Используется наличие сущности, а не её активность: при кратком обрыве связи (unavailable)
+    # датчик остаётся "сконфигурированным", а eco_*_ok=True (inactive → OK), поэтому ECO
+    # корректно активируется. Без настроенных датчиков ECO не включается никогда.
+    eco_has_active_sensors: >-
+      {{ '.' in co2_entity or '.' in pm25_entity or '.' in voc_entity
+         or '.' in no_entity or '.' in humidity_entity }}
     eco_active: '{{ (eco_mode_enabled | bool) and eco_has_active_sensors and eco_all_ok }}'
     # === ТЕКУЩЕЕ СОСТОЯНИЕ ПВУ ===
     current_hvac_mode: '{{ states(turkov_climate) | string }}'
