@@ -7,7 +7,7 @@
 - [ ] Blueprint импортируется в Home Assistant без ошибок.
 - [ ] Проверены оба файла: `pvu_min.yaml` и `pvu.yaml`.
 - [ ] Проверены значения в `select.options` (строковые `off`, `maintain` и т.д.).
-- [ ] Проверены `supported_hvac_modes` / `supported_fan_modes` проверки.
+- [ ] Проверены условия применения режимов (`hvac_apply_reason`, inline `state_attr` в `pvu_min.yaml`).
 - [ ] Проверены оба формата атрибутов режимов: список и строковое представление списка/enum.
 - [ ] В `debug_mode` видны причины `apply/unsupported/already_set/min_interval_hold` для HVAC и FAN.
 
@@ -34,11 +34,12 @@
 ### 2.2) ECO режим (только `pvu.yaml`)
 
 - [ ] `eco_mode_enabled=true` + все датчики ниже ECO-порогов → `hvac_mode=off`.
-- [ ] `eco_mode_enabled=true` + хотя бы один датчик выше порога → включается стандартная логика.
+- [ ] `eco_mode_enabled=true` + хотя бы один датчик выше порога → включается стандартная логика, установка запускается в `fan_only` (или `heat` при морозе).
 - [ ] `eco_mode_enabled=true` + **ни одного** датчика воздуха не задано → ECO не активируется (`eco_has_active_sensors=false`), установка работает в штатном режиме.
 - [ ] `eco_mode_enabled=true` + `away_behavior=maintain` → ECO применяется нормально.
 - [ ] `eco_mode_enabled=true` + `away_behavior=off` → установка выключена по away-политике, ECO не влияет.
 - [ ] Антизаморозка: при ECO=off и ухудшении воздуха активируется стандартная логика включая антизаморозку.
+- [ ] Anti-flap при ECO: проверено что при кратковременном улучшении/ухудшении воздуха нет быстрых on/off переключений (anti-flap через `hvac_min_switch_minutes` применяется к ECO намеренно).
 
 ### 2.3) Сезонные сценарии (регулярная практика)
 
