@@ -483,6 +483,67 @@ blueprint:
               max: 500.0
               step: 1.0
               mode: box
+    section_eco_mode:
+      name: '🍃 ECO режим'
+      icon: mdi:leaf
+      collapsed: true
+      input:
+        eco_mode_enabled:
+          name: '🍃 Включить ECO режим'
+          default: false
+          description: 'Если включено и все показатели воздуха ниже ECO-порогов — установка выключается (hvac_mode=off). При ухудшении воздуха включается обычная логика.'
+          selector:
+            boolean: {}
+        eco_co2_max:
+          name: '🫁 ECO: CO2 (ppm)'
+          default: 700
+          description: 'Если CO2 выше этого порога — ECO не выключает установку. Учитывается только если задан датчик CO2.'
+          selector:
+            number:
+              min: 400.0
+              max: 2500.0
+              step: 10.0
+              mode: box
+        eco_pm25_max:
+          name: '🧪 ECO: PM2.5 (µg/m³)'
+          default: 12
+          description: 'Если PM2.5 выше этого порога — ECO не выключает установку. Учитывается только если задан датчик PM2.5.'
+          selector:
+            number:
+              min: 1.0
+              max: 200.0
+              step: 1.0
+              mode: box
+        eco_voc_max:
+          name: '🧬 ECO: VOC (ед. датчика)'
+          default: 200
+          description: 'Если VOC выше этого порога — ECO не выключает установку. Учитывается только если задан датчик VOC.'
+          selector:
+            number:
+              min: 5.0
+              max: 2000.0
+              step: 1.0
+              mode: box
+        eco_no_max:
+          name: '🚗 ECO: NOx'
+          default: 8
+          description: 'Если NOx выше этого порога — ECO не выключает установку. Учитывается только если задан датчик NOx.'
+          selector:
+            number:
+              min: 1.0
+              max: 200.0
+              step: 1.0
+              mode: box
+        eco_humidity_max:
+          name: '💧 ECO: Влажность (%)'
+          default: 60
+          description: 'Если влажность выше этого порога — ECO не выключает установку.'
+          selector:
+            number:
+              min: 20.0
+              max: 90.0
+              step: 1.0
+              mode: box
     section_modes_debug:
       name: '⚙️ Режимы и диагностика'
       icon: mdi:tune-variant
@@ -719,6 +780,12 @@ action:
     away_off_fan_policy: !input away_off_fan_policy
     presence_mode: !input presence_mode
     presence_away_state: !input presence_away_state
+    eco_mode_enabled: !input eco_mode_enabled
+    eco_co2_max: !input eco_co2_max
+    eco_pm25_max: !input eco_pm25_max
+    eco_voc_max: !input eco_voc_max
+    eco_no_max: !input eco_no_max
+    eco_humidity_max: !input eco_humidity_max
 - variables:
     # === ВРЕМЯ / ДЕНЬ-НОЧЬ ===
     now_hms: '{{ now().strftime(''%H:%M:%S'') }}'
@@ -918,6 +985,16 @@ action:
     all_air_clear: '{{ co2_clear and pm25_clear and voc_clear and no_clear }}'
     outdoor_air_bad: '{{ pm25_outdoor_bad or co2_outdoor_bad or voc_outdoor_bad or
       no_outdoor_bad }}'
+    # === ECO РЕЖИМ ===
+    # Если eco_mode_enabled и все активные датчики ниже ECO-порогов → eco_active=true → desired_hvac=off.
+    # Датчики, не сконфигурированные в основной секции (sensor не задан), в проверке не участвуют.
+    eco_co2_ok: '{{ not co2_active or co2_value <= (eco_co2_max | float(9999)) }}'
+    eco_pm25_ok: '{{ not pm25_active or pm25_value <= (eco_pm25_max | float(9999)) }}'
+    eco_voc_ok: '{{ not voc_active or voc_value <= (eco_voc_max | float(9999)) }}'
+    eco_no_ok: '{{ not no_active or no_value <= (eco_no_max | float(9999)) }}'
+    eco_humidity_ok: '{{ not humidity_active or humidity_value <= (eco_humidity_max | float(9999)) }}'
+    eco_all_ok: '{{ eco_co2_ok and eco_pm25_ok and eco_voc_ok and eco_no_ok and eco_humidity_ok }}'
+    eco_active: '{{ (eco_mode_enabled | bool) and eco_all_ok }}'
     # === ТЕКУЩЕЕ СОСТОЯНИЕ ПВУ ===
     current_hvac_mode: '{{ states(turkov_climate) | string }}'
     climate_available: '{{ current_hvac_mode not in [''unknown'', ''unavailable'', ''none'',
@@ -936,7 +1013,7 @@ action:
     hvac_elapsed_sec: '{{ (now_ts | float(0)) - (hvac_last_changed_ts | float(0)) }}'
     hvac_switch_allowed: '{{ (hvac_elapsed_sec | float(0)) >= ((hvac_min_switch_minutes
       | float(0)) * 60) }}'
-    desired_hvac_mode: "{% if is_away_bool and away_behavior == 'off' %}\n  off\n{% elif temp_in_valid and temp_in > (target_temp | float + temp_hysteresis_on_eff |
+    desired_hvac_mode: "{% if is_away_bool and away_behavior == 'off' %}\n  off\n{% elif eco_active %}\n  off\n{% elif temp_in_valid and temp_in > (target_temp | float + temp_hysteresis_on_eff |
       float) and cool_allowed %}\n  {{ hvac_mode_cool | string }}\n{% elif temp_in_valid
       and temp_in < (target_temp | float - temp_hysteresis_on_eff | float) %}\n  {{ hvac_mode_heat
       | string }}\n{% elif humidity_clear and temp_in_valid and temp_in >= (target_temp
@@ -992,7 +1069,7 @@ action:
       | trim) != ''desired_empty'')
       or ((current_target_temp - (target_temp | float))
       | abs > 0.2)) }}'
-    debug_message: "Blueprint: Turkov AirFlow (develop)\nclimate_available={{ climate_available }}\nclimate_profile={{ climate_profile }}\nhome_profile={{ home_profile }}\noutdoor_temp_valid={{ temp_out_valid }}\noutdoor_policy={{ outdoor_temp_policy }}\noutdoor_limited={{ outdoor_unknown_limited }}\n\nis_day={{ is_day_bool }}\nis_away={{ is_away_bool }}\naway_behavior={{ away_behavior }}\naway_off_hvac_policy={{ away_off_hvac_policy }}\naway_off_fan_policy={{ away_off_fan_policy }}\n\ncurrent_hvac={{ current_hvac_mode }} -> desired_hvac={{ desired_hvac_mode | trim }}\nhvac_reason={{ hvac_apply_reason | trim }}\nhvac_min_switch_minutes={{ hvac_min_switch_minutes | float(0) }}\nhvac_elapsed_sec={{ hvac_elapsed_sec | int(0) }}\nskip_hvac_min_interval_for_off={{ skip_hvac_min_interval_for_off | bool }}\n\ncurrent_fan={{ current_fan_mode }} -> desired_fan={{ desired_fan_mode | trim }}\nfan_reason={{ fan_apply_reason | trim }}\nfan_stepdown_enabled={{ fan_stepdown_enabled | bool }}\n\ncommand_verify_delay_sec={{ command_verify_delay_sec | int(0) }}\n\ncurrent_target={{ current_target_temp }} -> target={{ target_temp | float }}\n\ncool_allowed={{ cool_allowed }}\nvent_allowed={{ vent_allowed }}\noutdoor_cool_min_eff={{ outdoor_cool_min_eff | float }}\noutdoor_vent_min_eff={{ outdoor_vent_min_eff | float }}\noutdoor_air_bad={{ outdoor_air_bad }}\nair_boost_count={{ air_boost_count | int(0) }}\n"
+    debug_message: "Blueprint: Turkov AirFlow (develop)\nclimate_available={{ climate_available }}\nclimate_profile={{ climate_profile }}\nhome_profile={{ home_profile }}\noutdoor_temp_valid={{ temp_out_valid }}\noutdoor_policy={{ outdoor_temp_policy }}\noutdoor_limited={{ outdoor_unknown_limited }}\n\nis_day={{ is_day_bool }}\nis_away={{ is_away_bool }}\naway_behavior={{ away_behavior }}\naway_off_hvac_policy={{ away_off_hvac_policy }}\naway_off_fan_policy={{ away_off_fan_policy }}\n\neco_mode={{ eco_mode_enabled | bool }}\neco_active={{ eco_active }}\neco_all_ok={{ eco_all_ok }}\neco_co2_ok={{ eco_co2_ok }}\neco_pm25_ok={{ eco_pm25_ok }}\neco_voc_ok={{ eco_voc_ok }}\neco_no_ok={{ eco_no_ok }}\neco_humidity_ok={{ eco_humidity_ok }}\n\ncurrent_hvac={{ current_hvac_mode }} -> desired_hvac={{ desired_hvac_mode | trim }}\nhvac_reason={{ hvac_apply_reason | trim }}\nhvac_min_switch_minutes={{ hvac_min_switch_minutes | float(0) }}\nhvac_elapsed_sec={{ hvac_elapsed_sec | int(0) }}\nskip_hvac_min_interval_for_off={{ skip_hvac_min_interval_for_off | bool }}\n\ncurrent_fan={{ current_fan_mode }} -> desired_fan={{ desired_fan_mode | trim }}\nfan_reason={{ fan_apply_reason | trim }}\nfan_stepdown_enabled={{ fan_stepdown_enabled | bool }}\n\ncommand_verify_delay_sec={{ command_verify_delay_sec | int(0) }}\n\ncurrent_target={{ current_target_temp }} -> target={{ target_temp | float }}\n\ncool_allowed={{ cool_allowed }}\nvent_allowed={{ vent_allowed }}\noutdoor_cool_min_eff={{ outdoor_cool_min_eff | float }}\noutdoor_vent_min_eff={{ outdoor_vent_min_eff | float }}\noutdoor_air_bad={{ outdoor_air_bad }}\nair_boost_count={{ air_boost_count | int(0) }}\n"
 - choose:
   # Шаг 0: применяем целевую уставку температуры (режим поддержания), если она изменилась.
   - conditions: '{{ climate_available and not (is_away_bool and away_behavior == ''off'')
