@@ -980,7 +980,6 @@ action:
     no_outdoor_value: '{{ no_outdoor_raw }}'
     no_outdoor_bad: '{{ no_outdoor_active and no_outdoor_value >= (no_outdoor_block_eff
       | float) }}'
-    any_air_boost: '{{ co2_boost or pm25_boost or voc_boost or no_boost }}'
     air_boost_count: "{{ (1 if co2_boost else 0)\n + (1 if pm25_boost else 0)\n + (1 if voc_boost else 0)\n + (1 if no_boost else 0)\n + (1 if humidity_boost else 0)\n}}"
     all_air_clear: '{{ co2_clear and pm25_clear and voc_clear and no_clear }}'
     outdoor_air_bad: '{{ pm25_outdoor_bad or co2_outdoor_bad or voc_outdoor_bad or
