@@ -37,7 +37,7 @@ blueprint:
               reorder: false
         temp_indoor:
           name: 🌡️ Температура в помещении
-          description: Обязательный датчик. По нему выбирается нагрев/охлаждение.
+          description: Обязательный датчик. По нему определяется необходимость режима охлаждения.
           selector:
             entity:
               domain:
@@ -278,23 +278,13 @@ blueprint:
               step: 0.5
               mode: box
         temp_hysteresis_on:
-          name: '🎚️ Гистерезис: включение (°C)'
+          name: '🎚️ Гистерезис охлаждения (°C)'
           default: 1.2
-          description: Насколько температура должна отклониться от цели для смены режима.
+          description: На сколько градусов температура в помещении должна превысить цель, чтобы включилось охлаждение.
           selector:
             number:
               min: 0.3
               max: 3.0
-              step: 0.1
-              mode: box
-        temp_hysteresis_off:
-          name: '🎚️ Гистерезис: возврат в норму (°C)'
-          default: 0.6
-          description: Зона возврата в нормальный режим вокруг целевой температуры.
-          selector:
-            number:
-              min: 0.2
-              max: 2.0
               step: 0.1
               mode: box
         outdoor_cool_min:
@@ -745,7 +735,6 @@ action:
     temp_night: !input temp_night
     temp_away: !input temp_away
     temp_hysteresis_on: !input temp_hysteresis_on
-    temp_hysteresis_off: !input temp_hysteresis_off
     outdoor_cool_min: !input outdoor_cool_min
     outdoor_vent_min: !input outdoor_vent_min
     outdoor_temp_policy: !input outdoor_temp_policy
@@ -847,8 +836,6 @@ action:
     home_humidity_shift: "{% if home_profile == 'office' %}\n  -5.0\n{% elif home_profile
       == 'house' %}\n  5.0\n{% else %}\n  0.0\n{% endif %}\n"
     temp_hysteresis_on_eff: '{{ (temp_hysteresis_on | float) * (climate_hysteresis_factor
-      | float) }}'
-    temp_hysteresis_off_eff: '{{ (temp_hysteresis_off | float) * (climate_hysteresis_factor
       | float) }}'
     outdoor_cool_min_eff: '{{ (outdoor_cool_min | float) + (climate_outdoor_cool_bias
       | float) }}'
@@ -1011,17 +998,7 @@ action:
     hvac_elapsed_sec: '{{ (now_ts | float(0)) - (hvac_last_changed_ts | float(0)) }}'
     hvac_switch_allowed: '{{ (hvac_elapsed_sec | float(0)) >= ((hvac_min_switch_minutes
       | float(0)) * 60) }}'
-    desired_hvac_mode: "{% if is_away_bool and away_behavior == 'off' %}\n  off\n{% elif eco_active %}\n  off\n{% elif temp_in_valid and temp_in > (target_temp | float + temp_hysteresis_on_eff |
-      float) and cool_allowed %}\n  {{ hvac_mode_cool | string }}\n{% elif temp_in_valid
-      and temp_in < (target_temp | float - temp_hysteresis_on_eff | float) %}\n  {{ hvac_mode_heat
-      | string }}\n{% elif humidity_clear and temp_in_valid and temp_in >= (target_temp
-      | float - temp_hysteresis_off_eff | float) and temp_in <= (target_temp | float
-      + temp_hysteresis_off_eff | float) and vent_allowed %}\n  {{ hvac_mode_ventilation
-      | string }}\n{% elif humidity_clear and temp_in_valid and temp_in >= (target_temp
-      | float - temp_hysteresis_off_eff | float) and temp_in <= (target_temp | float
-      + temp_hysteresis_off_eff | float) and (not vent_allowed) %}\n  {{ hvac_mode_heat
-      | string }}\n{% elif not vent_allowed %}\n  {{ hvac_mode_heat | string }}\n{%
-      else %}\n  {{ '' }}\n{% endif %}\n"
+    desired_hvac_mode: "{% if is_away_bool and away_behavior == 'off' %}\n  off\n{% elif eco_active %}\n  off\n{% elif not vent_allowed %}\n  {{ hvac_mode_heat | string }}\n{% elif cool_allowed and temp_in_valid and temp_in > (target_temp | float + temp_hysteresis_on_eff | float) %}\n  {{ hvac_mode_cool | string }}\n{% else %}\n  {{ hvac_mode_ventilation | string }}\n{% endif %}\n"
     # Логика вентилятора (3 ступени + плавный спад):
     # 1) Если никого нет и выбран away=off:
     #    - follow_fan_mode -> отправляем off

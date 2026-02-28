@@ -32,7 +32,7 @@ blueprint:
           reorder: false
     temp_indoor:
       name: 🌡️ Температура в помещении
-      description: Обязательный датчик. По нему выбирается нагрев/охлаждение.
+      description: Обязательный датчик. По нему определяется необходимость режима охлаждения.
       selector:
         entity:
           domain:
@@ -241,23 +241,13 @@ blueprint:
           step: 0.5
           mode: box
     temp_hysteresis_on:
-      name: '🎚️ Гистерезис: включение (°C)'
+      name: '🎚️ Гистерезис охлаждения (°C)'
       default: 1.0
-      description: Насколько температура должна отклониться от цели для смены режима.
+      description: На сколько градусов температура в помещении должна превысить цель, чтобы включилось охлаждение.
       selector:
         number:
           min: 0.3
           max: 3.0
-          step: 0.1
-          mode: box
-    temp_hysteresis_off:
-      name: '🎚️ Гистерезис: возврат в норму (°C)'
-      default: 0.5
-      description: Зона возврата в нормальный режим вокруг целевой температуры.
-      selector:
-        number:
-          min: 0.2
-          max: 2.0
           step: 0.1
           mode: box
     outdoor_cool_min:
@@ -579,7 +569,6 @@ action:
     temp_night: !input temp_night
     temp_away: !input temp_away
     temp_hysteresis_on: !input temp_hysteresis_on
-    temp_hysteresis_off: !input temp_hysteresis_off
     outdoor_cool_min: !input outdoor_cool_min
     outdoor_vent_min: !input outdoor_vent_min
     outdoor_temp_policy: !input outdoor_temp_policy
@@ -769,21 +758,7 @@ action:
       true) | string }}'
     current_target_temp: '{{ state_attr(turkov_climate, ''temperature'') | float(999)
       }}'
-    supported_hvac_modes: '{{ state_attr(turkov_climate, ''hvac_modes'') | default([],
-      true) }}'
-    supported_fan_modes: '{{ state_attr(turkov_climate, ''fan_modes'') | default([],
-      true) }}'
-    desired_hvac_mode: "{% if is_away_bool and away_behavior == 'off' %}\n  off\n{% elif temp_in_valid and temp_in > (target_temp | float + temp_hysteresis_on |
-      float) and cool_allowed %}\n  {{ hvac_mode_cool | string }}\n{% elif temp_in_valid
-      and temp_in < (target_temp | float - temp_hysteresis_on | float) %}\n  {{ hvac_mode_heat
-      | string }}\n{% elif humidity_clear and temp_in_valid and temp_in >= (target_temp
-      | float - temp_hysteresis_off | float) and temp_in <= (target_temp | float +
-      temp_hysteresis_off | float) and vent_allowed %}\n  {{ hvac_mode_ventilation
-      | string }}\n{% elif humidity_clear and temp_in_valid and temp_in >= (target_temp
-      | float - temp_hysteresis_off | float) and temp_in <= (target_temp | float +
-      temp_hysteresis_off | float) and (not vent_allowed) %}\n  {{ hvac_mode_heat
-      | string }}\n{% elif not vent_allowed %}\n  {{ hvac_mode_heat | string }}\n{%
-      else %}\n  {{ '' }}\n{% endif %}\n"
+    desired_hvac_mode: "{% if is_away_bool and away_behavior == 'off' %}\n  off\n{% elif not vent_allowed %}\n  {{ hvac_mode_heat | string }}\n{% elif cool_allowed and temp_in_valid and temp_in > (target_temp | float + temp_hysteresis_on | float) %}\n  {{ hvac_mode_cool | string }}\n{% else %}\n  {{ hvac_mode_ventilation | string }}\n{% endif %}\n"
     # Логика вентилятора (3 ступени):
     # 1) Если никого нет и выбран away=off -> не трогаем fan_mode (hvac_only, защита от coupling fan->HVAC).
     #    HVAC=off уже отправлен на предыдущем шаге; отдельный fan_mode=off может вызвать
@@ -795,9 +770,8 @@ action:
     desired_fan_mode: "{% set boost_count = air_boost_count | int(0) %}\n{% if is_away_bool and away_behavior == 'off' %}\n  {{ '' }}\n{% elif outdoor_air_bad and boost_count >= 1 %}\n  {{ fan_mode_medium | string }}\n{% elif outdoor_air_bad %}\n  {{ fan_mode_low | string }}\n{% elif boost_count >= 2 %}\n  {{ fan_mode_high | string }}\n{% elif boost_count == 1 %}\n  {{ fan_mode_medium | string }}\n{% elif all_air_clear and humidity_clear %}\n  {{ fan_mode_low | string }}\n{% else %}\n  {{ '' }}\n{% endif %}\n"
 - choose:
   # Шаг 0: применяем целевую уставку температуры (режим поддержания), если она изменилась.
-  - conditions: '{{ climate_available and not (is_away_bool and away_behavior == ''off'')
-      and (target_temp
-      | float(0)) > 0 and ((current_target_temp - (target_temp | float)) | abs >
+  - conditions: '{{ climate_available and (desired_hvac_mode | trim | lower) != ''off''
+      and (target_temp | float(0)) > 0 and ((current_target_temp - (target_temp | float)) | abs >
       0.2) }}'
     sequence:
     - service: climate.set_temperature
@@ -810,9 +784,9 @@ action:
   # Шаг 1: применяем HVAC только если режим действительно меняется
   # и поддерживается устройством. Если не поддерживается — сохраняем текущий режим.
   - conditions: "{% set desired = (desired_hvac_mode | trim | lower) %}\n{% set current
-      = (current_hvac_mode | string | lower) %}\n{% set modes = supported_hvac_modes
-      | default([], true) %}\n{% set modes_lc = (modes | map('string') | map('lower')
-      | list) if (modes is iterable and modes is not string) else [modes | string
+      = (current_hvac_mode | string | lower) %}\n{% set modes_raw = state_attr(turkov_climate,
+      'hvac_modes') | default([], true) %}\n{% set modes_lc = (modes_raw | map('string') | map('lower')
+      | list) if (modes_raw is iterable and modes_raw is not string) else [modes_raw | string
       | lower] %}\n{{ climate_available and desired | length > 0 and desired !=
       current and desired in modes_lc }}\n"
     sequence:
@@ -826,9 +800,9 @@ action:
   # Шаг 2: применяем fan_mode только если режим действительно меняется
   # и поддерживается устройством. Если не поддерживается — сохраняем текущий режим.
   - conditions: "{% set desired = (desired_fan_mode | trim | lower) %}\n{% set current
-      = (current_fan_mode | string | lower) %}\n{% set modes = supported_fan_modes
-      | default([], true) %}\n{% set modes_lc = (modes | map('string') | map('lower')
-      | list) if (modes is iterable and modes is not string) else [modes | string
+      = (current_fan_mode | string | lower) %}\n{% set modes_raw = state_attr(turkov_climate,
+      'fan_modes') | default([], true) %}\n{% set modes_lc = (modes_raw | map('string') | map('lower')
+      | list) if (modes_raw is iterable and modes_raw is not string) else [modes_raw | string
       | lower] %}\n{{ climate_available and desired | length > 0 and desired !=
       current and desired in modes_lc }}\n"
     sequence:
