@@ -902,7 +902,7 @@ action:
     # === КАЧЕСТВО ВОЗДУХА (ВНУТРИ) ===
     co2_entity: '{{ co2_sensor | default('''', true) | string }}'
     co2_raw: '{{ states(co2_entity) | float(0) }}'
-    co2_plausible: '{{ co2_raw >= 300 and co2_raw <= 5000 }}'
+    co2_plausible: '{{ co2_raw >= 200 and co2_raw <= 5000 }}'
     co2_active: '{{ ''.'' in co2_entity and states(co2_entity) not in [''unknown'',
       ''unavailable'', ''none'', ''None'', ''''] and co2_plausible }}'
     co2_value: '{{ co2_raw }}'
