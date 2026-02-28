@@ -24,7 +24,9 @@ assignees: ''
 
 - Home Assistant Core:
 - Home Assistant OS/Supervisor:
-- Blueprint: `pvu.yaml` или `pvu_min.yaml`
+- Blueprint: `pvu.yaml` / `pvu_min.yaml` (нужное оставить)
+- Версия blueprint (из CHANGELOG): `v0.x.x`
+- `debug_mode` включён: да / нет
 
 ## Trace / логи
 
@@ -38,3 +40,5 @@ assignees: ''
 - `outdoor_vent_min`:
 - `outdoor_temp_policy` (если `pvu.yaml`):
 - `fan_mode_low/medium/high`:
+- `eco_mode_enabled` (если `pvu.yaml`):
+- `away_off_hvac_policy` / `away_off_fan_policy` (если `pvu.yaml`):

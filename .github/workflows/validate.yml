@@ -48,3 +48,43 @@ jobs:
               document-start: disable
               truthy: disable
               comments-indentation: disable
+
+  blueprint-check:
+    name: Blueprint structure check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check blueprint required keys
+        run: |
+          python3 - <<'EOF'
+          import yaml, sys, pathlib
+
+          REQUIRED_TOP = {"blueprint", "trigger", "action"}
+          REQUIRED_BLUEPRINT = {"name", "domain", "author"}
+          errors = []
+
+          for path in pathlib.Path(".").glob("pvu*.yaml"):
+              with open(path) as f:
+                  try:
+                      doc = yaml.safe_load(f)
+                  except yaml.YAMLError as e:
+                      errors.append(f"{path}: YAML parse error: {e}")
+                      continue
+              missing_top = REQUIRED_TOP - set(doc or {})
+              if missing_top:
+                  errors.append(f"{path}: missing top-level keys: {missing_top}")
+                  continue
+              bp = doc.get("blueprint", {})
+              missing_bp = REQUIRED_BLUEPRINT - set(bp or {})
+              if missing_bp:
+                  errors.append(f"{path}: blueprint missing keys: {missing_bp}")
+              if bp.get("domain") != "automation":
+                  errors.append(f"{path}: blueprint.domain must be 'automation', got {bp.get('domain')!r}")
+
+          if errors:
+              for e in errors:
+                  print(f"ERROR: {e}")
+              sys.exit(1)
+          else:
+              print(f"OK: all blueprint files passed structure check")
+          EOF

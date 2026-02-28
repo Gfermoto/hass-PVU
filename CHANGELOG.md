@@ -7,14 +7,22 @@
     `eco_co2_max`, `eco_pm25_max`, `eco_voc_max`, `eco_no_max`, `eco_humidity_max`.
   - Если ECO включён и все активные датчики ниже своих ECO-порогов → `hvac_mode=off`.
   - Датчики, не сконфигурированные в основной секции, в ECO-проверке не участвуют.
+  - **Edge case:** если ни один датчик воздуха не задан, ECO не активируется
+    (`eco_has_active_sensors=false`) — без контроля воздуха выключать установку
+    нет смысла.
   - При ухудшении воздуха (хотя бы один датчик выше порога) включается стандартная
     логика (включая антизаморозку и `outdoor_temp_policy`) без каких-либо изменений.
   - ECO применяется при `away_behavior=maintain`; если установка уже выключена
     по политике away, ECO на это не влияет.
   - Использует существующий `hvac_min_switch_minutes` как anti-flap — отдельного
     интервала нет.
-- Добавлены ECO-флаги в `debug_mode`: `eco_active`, `eco_all_ok`,
+- Добавлены ECO-флаги в `debug_mode`: `eco_active`, `eco_has_sensors`, `eco_all_ok`,
   `eco_co2_ok`, `eco_pm25_ok`, `eco_voc_ok`, `eco_no_ok`, `eco_humidity_ok`.
+- **Fix (`pvu.yaml`):** упрощён `skip_hvac_min_interval_for_off` — убрана избыточная
+  проверка `desired_hvac_mode == 'off'` (условие уже гарантировано контекстом).
+- **Fix (`pvu_min.yaml`):** при `away=off` больше не отправляется `fan_mode=off`.
+  Это защищает устройства с coupling fan→HVAC от неявного повторного выключения HVAC.
+  Поведение эквивалентно `hvac_only` из полной версии.
 
 ## v0.5.3
 

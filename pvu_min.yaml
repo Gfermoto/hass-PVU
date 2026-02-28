@@ -786,12 +786,14 @@ action:
       | string }}\n{% else
       %}\n  {{ '' }}\n{% endif %}\n"
     # Логика вентилятора (3 ступени):
-    # 1) Если никого нет и выбран away=off -> off
+    # 1) Если никого нет и выбран away=off -> не трогаем fan_mode (hvac_only, защита от coupling fan->HVAC).
+    #    HVAC=off уже отправлен на предыдущем шаге; отдельный fan_mode=off может вызвать
+    #    неявное повторное выключение HVAC на устройствах с аппаратной связкой fan->HVAC.
     # 2) Если снаружи воздух плохой, ограничиваем разгон (max = medium)
     # 3) Если внутри выраженно плохо (>=2 триггера) -> high
     # 4) Если внутри умеренно плохо (1 триггер) -> medium
     # 5) Если всё чисто -> low
-    desired_fan_mode: "{% set boost_count = air_boost_count | int(0) %}\n{% if is_away_bool and away_behavior == 'off' %}\n  off\n{% elif outdoor_air_bad and boost_count >= 1 %}\n  {{ fan_mode_medium | string }}\n{% elif outdoor_air_bad %}\n  {{ fan_mode_low | string }}\n{% elif boost_count >= 2 %}\n  {{ fan_mode_high | string }}\n{% elif boost_count == 1 %}\n  {{ fan_mode_medium | string }}\n{% elif all_air_clear and humidity_clear %}\n  {{ fan_mode_low | string }}\n{% else %}\n  {{ '' }}\n{% endif %}\n"
+    desired_fan_mode: "{% set boost_count = air_boost_count | int(0) %}\n{% if is_away_bool and away_behavior == 'off' %}\n  {{ '' }}\n{% elif outdoor_air_bad and boost_count >= 1 %}\n  {{ fan_mode_medium | string }}\n{% elif outdoor_air_bad %}\n  {{ fan_mode_low | string }}\n{% elif boost_count >= 2 %}\n  {{ fan_mode_high | string }}\n{% elif boost_count == 1 %}\n  {{ fan_mode_medium | string }}\n{% elif all_air_clear and humidity_clear %}\n  {{ fan_mode_low | string }}\n{% else %}\n  {{ '' }}\n{% endif %}\n"
 - choose:
   # Шаг 0: применяем целевую уставку температуры (режим поддержания), если она изменилась.
   - conditions: '{{ climate_available and not (is_away_bool and away_behavior == ''off'')
