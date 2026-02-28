@@ -59,32 +59,45 @@ jobs:
           python3 - <<'EOF'
           import yaml, sys, pathlib
 
+          # yaml.safe_load() не знает тег !input (кастомный тег HA Blueprint).
+          # Регистрируем конструктор, который возвращает скалярное значение тега,
+          # чтобы парсер не падал с ConstructorError.
+          yaml.add_constructor(
+              "!input",
+              lambda loader, node: loader.construct_scalar(node),
+              Loader=yaml.SafeLoader,
+          )
+
           REQUIRED_TOP = {"blueprint", "trigger", "action"}
           REQUIRED_BLUEPRINT = {"name", "domain", "author"}
           errors = []
 
-          for path in pathlib.Path(".").glob("pvu*.yaml"):
+          for path in sorted(pathlib.Path(".").glob("pvu*.yaml")):
               with open(path) as f:
                   try:
                       doc = yaml.safe_load(f)
                   except yaml.YAMLError as e:
                       errors.append(f"{path}: YAML parse error: {e}")
                       continue
-              missing_top = REQUIRED_TOP - set(doc or {})
-              if missing_top:
-                  errors.append(f"{path}: missing top-level keys: {missing_top}")
+              if not isinstance(doc, dict):
+                  errors.append(f"{path}: expected a YAML mapping at top level")
                   continue
-              bp = doc.get("blueprint", {})
-              missing_bp = REQUIRED_BLUEPRINT - set(bp or {})
+              missing_top = REQUIRED_TOP - set(doc)
+              if missing_top:
+                  errors.append(f"{path}: missing top-level keys: {sorted(missing_top)}")
+                  continue
+              bp = doc.get("blueprint") or {}
+              missing_bp = REQUIRED_BLUEPRINT - set(bp)
               if missing_bp:
-                  errors.append(f"{path}: blueprint missing keys: {missing_bp}")
+                  errors.append(f"{path}: blueprint missing keys: {sorted(missing_bp)}")
               if bp.get("domain") != "automation":
-                  errors.append(f"{path}: blueprint.domain must be 'automation', got {bp.get('domain')!r}")
+                  errors.append(
+                      f"{path}: blueprint.domain must be 'automation', got {bp.get('domain')!r}"
+                  )
 
           if errors:
               for e in errors:
                   print(f"ERROR: {e}")
               sys.exit(1)
-          else:
-              print(f"OK: all blueprint files passed structure check")
+          print(f"OK: {len(list(pathlib.Path('.').glob('pvu*.yaml')))} blueprint file(s) passed structure check")
           EOF

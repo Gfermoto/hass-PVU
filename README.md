@@ -176,7 +176,7 @@ Blueprint для автоматизации приточно-вытяжной у
   - активные профили `climate_profile` и `home_profile`;
   - причины ограничений (например, неизвестная `temp_outdoor` при `conservative`);
   - расчётные флаги (`cool_allowed`, `vent_allowed`, `air_boost_count`);
-  - состояние ECO: `eco_active`, `eco_has_sensors`, `eco_all_ok` и флаги по каждому датчику.
+  - состояние ECO: `eco_active`, `eco_has_active_sensors`, `eco_all_ok` и флаги по каждому датчику.
 - Post-check верификация через `command_verify_delay_sec`: если state не совпал с ожидаемым через N секунд — создаётся отдельное уведомление.
 - **Что делать, если команда отправлена, но устройство её не приняло:**
   1. Включите `debug_mode` и задайте `command_verify_delay_sec` (8–10 с).
