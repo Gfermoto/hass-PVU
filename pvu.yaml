@@ -1005,10 +1005,6 @@ action:
       true) | string }}'
     current_target_temp: '{{ state_attr(turkov_climate, ''temperature'') | float(999)
       }}'
-    supported_hvac_modes: '{{ state_attr(turkov_climate, ''hvac_modes'') | default([],
-      true) }}'
-    supported_fan_modes: '{{ state_attr(turkov_climate, ''fan_modes'') | default([],
-      true) }}'
     now_ts: '{{ as_timestamp(now()) | float(0) }}'
     hvac_last_changed_ts: '{{ as_timestamp(states[turkov_climate].last_changed) | float(0)
       }}'
