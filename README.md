@@ -1,6 +1,7 @@
 # hass-PVU
 
 [![License: MIT](https://img.shields.io/github/license/Gfermoto/hass-PVU)](./LICENSE)
+[![Validate](https://github.com/Gfermoto/hass-PVU/actions/workflows/validate.yml/badge.svg)](https://github.com/Gfermoto/hass-PVU/actions/workflows/validate.yml)
 
 Blueprint для автоматизации приточно-вытяжной установки (ПВУ) Turkov в Home Assistant: управление вентиляцией и воздухообменом по CO2/IAQ, подогрев приточного воздуха в мороз, антизаморозка, ECO режим, политики в режиме отсутствия.
 
@@ -28,6 +29,7 @@ Blueprint для автоматизации приточно-вытяжной у
 | Политики away=off | ❌ | ✅ |
 | ECO режим | ❌ | ✅ |
 | Диагностика / debug_mode | ❌ | ✅ |
+| Плавный спад вентилятора | ❌ | ✅ |
 | `outdoor_vent_min` по умолчанию | `0 °C` | `3 °C` |
 | `outdoor_cool_min` по умолчанию | `18 °C` | `20 °C` |
 | `temp_hysteresis_on` по умолчанию | `1.0` | `1.2` |
@@ -116,7 +118,7 @@ Blueprint для автоматизации приточно-вытяжной у
 - Логика 3 ступеней: `low` -> `medium` -> `high`.
 - Источники разгона: влажность и/или загрязнение воздуха внутри (CO2/PM2.5/VOC/NOx).
 - Наружные датчики качества воздуха ограничивают агрессивный разгон (при плохом наружном воздухе максимум `medium`).
-- В develop-ветке доступен плавный спад скорости (`fan_stepdown_enabled`): при очистке воздуха переход идёт ступенчато `high -> medium -> low`.
+- Плавный спад скорости (`fan_stepdown_enabled`, по умолчанию включён): при очистке воздуха переход идёт ступенчато `high → medium → low`, а не скачком.
 
 #### 4. Профили климата и жилья (Этап 3)
 - `climate_profile`:
@@ -188,12 +190,12 @@ Blueprint для автоматизации приточно-вытяжной у
   - активные профили `climate_profile` и `home_profile`;
   - причины ограничений (например, неизвестная `temp_outdoor` при `conservative`);
   - расчётные флаги (`cool_allowed`, `vent_allowed`, `air_boost_count`);
-  - состояние ECO: `eco_active`, `eco_has_active_sensors`, `eco_all_ok` и флаги по каждому датчику.
+  - состояние ECO: `eco_active`, `eco_has_sensors`, `eco_all_ok` и флаги по каждому датчику.
 - Post-check верификация через `command_verify_delay_sec`: если state не совпал с ожидаемым через N секунд — создаётся отдельное уведомление.
 - **Что делать, если команда отправлена, но устройство её не приняло:**
   1. Включите `debug_mode` и задайте `command_verify_delay_sec` (8–10 с).
   2. Проверьте уведомление post-check: `expected_*` vs `actual_*`.
-  3. Убедитесь, что режим есть в `supported_hvac_modes` устройства.
+  3. Убедитесь, что режим есть в атрибуте `hvac_modes` устройства (Developer Tools → States → climate-сущность).
   4. Проверьте `outdoor_temp_policy`: при `conservative` без наружного датчика `cool`/`fan_only` не разрешаются.
   5. Переключите `away_off_fan_policy` в `hvac_only` для устройств с coupling fan→HVAC.
 
@@ -310,11 +312,6 @@ Blueprint для автоматизации приточно-вытяжной у
        state_topic: "airgradient/pm25"
        unit_of_measurement: "µg/m³"
 
-   notify:
-     - platform: telegram
-       name: "Telegram Notifications"
-       chat_id: "YOUR_CHAT_ID"
-       default_message: "Уведомление от системы вентиляции"
    ```
 
    **Пример сенсоров Turkov по MQTT** (подставьте свой серийный номер вместо `X-XXXXXX-XX`):
@@ -353,15 +350,9 @@ Blueprint для автоматизации приточно-вытяжной у
 
 ### Требования
 
-1. **Аппаратные**:
-   - Home Assistant с процессором ARM/x86
-   - 2GB RAM минимум
-   - Стабильное подключение к сети
-   
-2. **Программные**:
-   - Home Assistant OS/Core
-   - MQTT брокер
-   - HACS
+- Home Assistant OS/Core **2023.12.0+**
+- HACS
+- MQTT-брокер (Mosquitto или аналог) — если датчики подключены по MQTT
 
 ### Разработка и качество
 
