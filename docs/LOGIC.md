@@ -236,6 +236,7 @@ stateDiagram-v2
 | `air_boost_count` | количество внутренних IAQ-датчиков, превысивших порог |
 | `all_air_clear` | CO₂, PM2.5, VOC, NOx — все ниже нижнего порога |
 | `humidity_clear` | влажность ниже нижнего порога (или датчик не задан) |
-| `eco_active` | ECO включён + есть датчики + все ниже ECO-порогов |
+| `eco_has_sensors` | хотя бы один IAQ-датчик задан и активен (иначе ECO не включается) |
+| `eco_active` | ECO включён + `eco_has_sensors` + все ниже ECO-порогов |
 | `hvac_switch_allowed` | с последнего переключения прошло ≥ `hvac_min_switch_minutes` |
 | `skip_hvac_min_interval_for_off` | `away=off` + `away_off_hvac_policy=immediate` |

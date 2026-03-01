@@ -668,7 +668,7 @@ action:
     # === ВЛАЖНОСТЬ ===
     humidity_entity: '{{ humidity_indoor | string }}'
     humidity_raw: '{{ states(humidity_entity) | float(0) }}'
-    humidity_plausible: '{{ humidity_raw >= 1 and humidity_raw <= 100 }}'
+    humidity_plausible: '{{ humidity_raw >= 0 and humidity_raw <= 100 }}'
     humidity_active: '{{ states(humidity_entity) not in [''unknown'', ''unavailable'',
       ''none'', ''None'', ''''] and humidity_plausible }}'
     humidity_value: '{{ humidity_raw }}'
@@ -721,7 +721,7 @@ action:
     voc_clear: '{{ (not voc_active) or voc_value <= (voc_low | float) }}'
     voc_outdoor_entity: '{{ voc_outdoor_sensor | default('''', true) | string }}'
     voc_outdoor_raw: '{{ states(voc_outdoor_entity) | float(0) }}'
-    voc_outdoor_plausible: '{{ voc_outdoor_raw >= 1 and voc_outdoor_raw <= 5000 }}'
+    voc_outdoor_plausible: '{{ voc_outdoor_raw >= 0 and voc_outdoor_raw <= 5000 }}'
     voc_outdoor_active: '{{ ''.'' in voc_outdoor_entity and states(voc_outdoor_entity)
       not in [''unknown'', ''unavailable'', ''none'', ''None'', ''''] and voc_outdoor_plausible
       }}'
@@ -740,7 +740,7 @@ action:
     # Эти параметры не "включают усиление", а ограничивают его.
     no_outdoor_entity: '{{ no_outdoor_sensor | default('''', true) | string }}'
     no_outdoor_raw: '{{ states(no_outdoor_entity) | float(0) }}'
-    no_outdoor_plausible: '{{ no_outdoor_raw >= 1 and no_outdoor_raw <= 500 }}'
+    no_outdoor_plausible: '{{ no_outdoor_raw >= 0 and no_outdoor_raw <= 500 }}'
     no_outdoor_active: '{{ ''.'' in no_outdoor_entity and states(no_outdoor_entity)
       not in [''unknown'', ''unavailable'', ''none'', ''None'', ''''] and no_outdoor_plausible
       }}'
