@@ -78,6 +78,9 @@ jobs:
           REQUIRED_BLUEPRINT = {"name", "domain", "author"}
           errors = []
           blueprint_files = sorted(pathlib.Path(".").glob("pvu*.yaml"))
+          if not blueprint_files:
+              print("ERROR: no blueprint files matching pvu*.yaml found")
+              sys.exit(1)
 
           for path in blueprint_files:
               with open(path) as f:

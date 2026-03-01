@@ -298,19 +298,17 @@ Blueprint для автоматизации приточно-вытяжной у
        modbus_host: 192.168.1.x
        modbus_port: 502
 
-   sensor:
-     - platform: mqtt
-       name: "CO2 Level"
-       state_topic: "airgradient/co2"
-       unit_of_measurement: "ppm"
-     - platform: mqtt
-       name: "Humidity"
-       state_topic: "airgradient/humidity"
-       unit_of_measurement: "%"
-     - platform: mqtt
-       name: "PM2.5"
-       state_topic: "airgradient/pm25"
-       unit_of_measurement: "µg/m³"
+   mqtt:
+     sensor:
+       - name: "CO2 Level"
+         state_topic: "airgradient/co2"
+         unit_of_measurement: "ppm"
+       - name: "Humidity"
+         state_topic: "airgradient/humidity"
+         unit_of_measurement: "%"
+       - name: "PM2.5"
+         state_topic: "airgradient/pm25"
+         unit_of_measurement: "µg/m³"
 
    ```
 
