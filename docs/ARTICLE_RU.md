@@ -82,11 +82,13 @@
 
 ![Блок-схема цикла](images/diagrams/cycle-flowchart.png)
 
+![Детальная блок-схема принятия решений (HVAC / Fan / Apply)](images/diagrams/logic-flowchart.png)
+
 ## Что улучшилось в UI
 
 В полном blueprint (`pvu.yaml`) полей много: сущности, датчики, пороги, политики, диагностика. Чтобы в мастере Home Assistant не скроллить одну длинную простыню, всё сгруппировано в логические секции (input sections): сущности и датчики, присутствие и расписание, температура и защита, качество воздуха и пороги, режимы и диагностика. Секции по умолчанию свернуты — открываешь только то, что правишь. Для минимального варианта (`pvu_min.yaml`) секций меньше, форма компактная.
 
-**[Здесь будет: скриншот мастера настройки automation с развёрнутой/свёрнутой секцией blueprint]**
+![Мастер настройки automation — секции blueprint](images/screenshots/automation.png)
 
 ## Что появилось в Этапе 3
 
@@ -159,5 +161,5 @@ Changelog: [`CHANGELOG.md`](../CHANGELOG.md)
 - [x] Сценарий away (immediate vs respect_min_interval) → `diagrams/away-scenario.png`
 - [x] Скриншот диагностического уведомления → `screenshots/turkov_debug.png`
 - [x] Скриншот дашборда / статистика режимов и CO₂ → `screenshots/turkov_stat.png`
-- [ ] Скриншот мастера настройки automation (секции blueprint) → `screenshots/`
+- [x] Скриншот мастера настройки automation (секции blueprint) → `screenshots/automation.png`
 - [x] Фото реальной установки → `photos/`
