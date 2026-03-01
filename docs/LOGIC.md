@@ -71,7 +71,7 @@ flowchart TD
 ```mermaid
 flowchart TD
     ECO_EN{"eco_mode_enabled = true?"} -->|Нет| INACTIVE(["eco_active = false"])
-    ECO_EN -->|Да| SENSORS{"eco_has_active_sensors?\n(хотя бы один датчик воздуха задан)"}
+    ECO_EN -->|Да| SENSORS{"eco_has_sensors?\n(хотя бы один датчик воздуха задан)"}
     SENSORS -->|Нет — нет датчиков| INACTIVE
     SENSORS -->|Да| ALL_OK{"eco_all_ok?\nВСЕ активные датчики\nниже своих ECO-порогов"}
     ALL_OK -->|Нет — воздух грязный| INACTIVE

@@ -2,4 +2,4 @@
 default: true
 rules:
   MD013: false   # line length — длинные пункты в CHANGELOG и шаблонах
-  MD041: false   # first line heading — в шаблонах PR первым идёт ##
+  MD041: false   # first line heading — не всегда H1 (CHANGELOG, шаблоны)

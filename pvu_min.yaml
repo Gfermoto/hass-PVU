@@ -178,7 +178,7 @@ blueprint:
             value: binary_sensor
           - label: Person/Group (not_home = нет дома)
             value: person_group
-          - label: Alarm (disarmed = дома, иначе нет дома)
+          - label: Alarm (away/vacation/triggered = нет дома)
             value: alarm
           - label: Пользовательское состояние (см. поле ниже)
             value: custom
@@ -493,7 +493,7 @@ blueprint:
     hvac_mode_heat:
       name: '🔥 HVAC: нагрев'
       default: heat
-      description: Режим нагрева (рекомендовано heat).
+      description: Режим нагрева (рекомендовано heat). Используется как антизаморозка — не выбирайте fan_only.
       selector:
         select:
           options:
@@ -501,8 +501,6 @@ blueprint:
             value: heat
           - label: cool
             value: cool
-          - label: fan_only
-            value: fan_only
           - label: 'off'
             value: 'off'
     hvac_mode_cool:

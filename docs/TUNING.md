@@ -11,7 +11,7 @@
   - наружные `CO2/PM2.5/VOC/NOx` (если есть);
   - `climate`-сущность Turkov (`hvac_mode`, `fan_mode`).
 - Для стабильности оставьте неизменными:
-  - `temp_hysteresis_on/off`;
+  - `temp_hysteresis_on`;
   - `outdoor_temp_policy`;
   - `hvac_min_switch_minutes`.
   - `climate_profile` и `home_profile` (меняйте только после завершения базовой калибровки).

@@ -188,7 +188,7 @@ blueprint:
                 value: binary_sensor
               - label: Person/Group (not_home = нет дома)
                 value: person_group
-              - label: Alarm (disarmed = дома, иначе нет дома)
+              - label: Alarm (away/vacation/triggered = нет дома)
                 value: alarm
               - label: Пользовательское состояние (см. поле ниже)
                 value: custom
