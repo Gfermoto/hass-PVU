@@ -67,6 +67,7 @@ Backport в stable делаем только после проверки в deve
 | `v0.7.2` | Исправления: ECO/fan coupling, fan_stepdown, антизаморозка | ✅ Выпущено |
 | `v0.7.3` | Исправления: VOC/NOx plausibility, presence_mode=custom, alarm UI | ✅ Выпущено |
 | `v0.7.4` | Исправления: outdoor plausibility >= 0, humidity plausibility >= 0 | ✅ Выпущено |
+| `v0.7.5` | Исправление: desired_fan_mode приоритет away=off перед eco_active | ✅ Выпущено |
 | `v1.0.0` | Стабильный релиз | ⏳ Цель |
 
 ## Метрики и наблюдение (без отдельной инфраструктуры)
