@@ -207,7 +207,7 @@ blueprint:
           selector:
             select:
               options:
-              - label: Поддерживать режим в отсутствии (temp_away)
+              - label: Поддерживать режим в отсутствии (ECO может отключить при чистом воздухе)
                 value: 'maintain'
               - label: Выключать установку
                 value: 'off'
@@ -645,7 +645,7 @@ blueprint:
         command_verify_delay_sec:
           name: '⏱️ Debug: верификация команды через N сек'
           default: 8
-          description: Через сколько секунд после service-call проверять, что устройство реально перешло в целевой режим (0 = отключить проверку).
+          description: 'Через сколько секунд после service-call проверять, что устройство перешло в целевой режим (0 = отключить). Работает только при включённой диагностике (debug_mode=true).'
           selector:
             number:
               min: 0.0

@@ -100,7 +100,7 @@ jobs:
               missing_bp = REQUIRED_BLUEPRINT - set(bp)
               if missing_bp:
                   errors.append(f"{path}: blueprint missing keys: {sorted(missing_bp)}")
-              if bp.get("domain") != "automation":
+              if "domain" not in missing_bp and bp.get("domain") != "automation":
                   errors.append(
                       f"{path}: blueprint.domain must be 'automation', got {bp.get('domain')!r}"
                   )
