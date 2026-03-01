@@ -97,7 +97,10 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    START([" "]) --> A{"is_away AND\naway_behavior = off?"}
+    START([" "]) --> ECO{"eco_active?\n(ECO выключил HVAC)"}
+
+    ECO -->|Да| F_ECO(["desired_fan = ''\nне менять\n(HVAC выключен через ECO)"])
+    ECO -->|Нет| A{"is_away AND\naway_behavior = off?"}
 
     A -->|Да, follow_fan_mode| F_OFF(["desired_fan = **off**"])
     A -->|Да, hvac_only| F_SKIP(["desired_fan = '' \nне менять\n(защита от coupling)"])
@@ -182,6 +185,7 @@ flowchart TD
 
 | Условие (приоритет сверху вниз) | `desired_fan` |
 |---|---|
+| `eco_active` (только pvu.yaml) | `''` (не менять, HVAC уже off) |
 | `away=off` + `follow_fan_mode` | `off` |
 | `away=off` + `hvac_only` | `''` (не менять) |
 | `outdoor_air_bad` + `boost ≥ 1` | `medium` |

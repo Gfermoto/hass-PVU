@@ -178,7 +178,7 @@ blueprint:
             value: binary_sensor
           - label: Person/Group (not_home = нет дома)
             value: person_group
-          - label: Alarm (away/vacation/triggered = нет дома)
+          - label: Alarm (armed_away/armed_vacation/triggered = нет дома)
             value: alarm
           - label: Пользовательское состояние (см. поле ниже)
             value: custom
@@ -632,8 +632,8 @@ action:
           {{ is_state(presence_entity, 'not_home') or is_state(presence_entity, 'off') }}
         {% endif %}
       {% elif presence_mode == 'custom' %}
-        {% set away_state = (presence_away_state | string | trim) %}
-        {{ away_state != '' and presence_state == away_state }}
+        {% set away_state = (presence_away_state | string | trim | lower) %}
+        {{ away_state != '' and (presence_state | lower) == away_state }}
       {% else %}
         {% if presence_state in ['not_home', 'off', 'armed_away', 'armed_vacation', 'triggered'] %}
           {{ true }}
@@ -713,7 +713,7 @@ action:
       | float) }}'
     voc_entity: '{{ voc_sensor | default('''', true) | string }}'
     voc_raw: '{{ states(voc_entity) | float(0) }}'
-    voc_plausible: '{{ voc_raw >= 1 and voc_raw <= 5000 }}'
+    voc_plausible: '{{ voc_raw >= 0 and voc_raw <= 5000 }}'
     voc_active: '{{ ''.'' in voc_entity and states(voc_entity) not in [''unknown'',
       ''unavailable'', ''none'', ''None'', ''''] and voc_plausible }}'
     voc_value: '{{ voc_raw }}'
@@ -730,7 +730,7 @@ action:
       | float) }}'
     no_entity: '{{ no_sensor | default('''', true) | string }}'
     no_raw: '{{ states(no_entity) | float(0) }}'
-    no_plausible: '{{ no_raw >= 1 and no_raw <= 500 }}'
+    no_plausible: '{{ no_raw >= 0 and no_raw <= 500 }}'
     no_active: '{{ ''.'' in no_entity and states(no_entity) not in [''unknown'', ''unavailable'',
       ''none'', ''None'', ''''] and no_plausible }}'
     no_value: '{{ no_raw }}'
