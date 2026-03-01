@@ -151,15 +151,3 @@ Changelog: [`CHANGELOG.md`](../CHANGELOG.md)
 ## Вместо заключения
 
 Для себя проект считаю закрытым: сценарии home/away, anti-flap, день/ночь гонял вживую, политики и диагностика прописаны в коде и в документации. Если у вас Turkov или другая ПВУ с climate в Home Assistant — можно начать с `pvu_min.yaml` для минимального контура или сразу взять `pvu.yaml` для полного набора с профилями и отладкой. Баги и предложения удобно оставлять в [Issues](https://github.com/Gfermoto/hass-PVU/issues); отчёты с других установок (не только Turkov) тоже пригодятся — по ним можно будет уточнить совместимость и ограничения в доке.
-
----
-
-**Чеклист иллюстраций:**
-
-- [x] Схема трёх контуров (HVAC / Fan / Safety) → `diagrams/three-contours.png`
-- [x] Блок-схема одного цикла → `diagrams/cycle-flowchart.png`
-- [x] Сценарий away (immediate vs respect_min_interval) → `diagrams/away-scenario.png`
-- [x] Скриншот диагностического уведомления → `screenshots/turkov_debug.png`
-- [x] Скриншот дашборда / статистика режимов и CO₂ → `screenshots/turkov_stat.png`
-- [x] Скриншот мастера настройки automation (секции blueprint) → `screenshots/automation.png`
-- [x] Фото реальной установки → `photos/`
